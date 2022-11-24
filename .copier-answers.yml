@@ -7,7 +7,7 @@ description: Kedro plugin with AWS SageMaker Pipelines support
 docs_url: https://kedro-sagemaker.readthedocs.io/
 full_name: Kedro SageMaker Pipelines plugin
 github_url: https://github.com/getindata/kedro-sagemaker
-initial_version: 0.0.0
+initial_version: 0.0.1
 keywords:
 - kedro
 - sagemaker
