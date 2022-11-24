@@ -16,5 +16,5 @@
 </p>
 
 # Coming soon!
-Stay tuned.
+Stay tuned or connect with us directly.
 
