@@ -1,0 +1,19 @@
+# Changes here will be overwritten by Copier
+_commit: v1.0.0
+_src_path: git@github.com:getindata/python-opensource-template.git
+authors:
+- Marcin Zabłocki <marcin.zablocki@getindata.com>
+description: Kedro plugin with AWS SageMaker Pipelines support
+docs_url: https://kedro-sagemaker.readthedocs.io/
+full_name: Kedro SageMaker Pipelines plugin
+github_url: https://github.com/getindata/kedro-sagemaker
+initial_version: 0.0.1
+keywords:
+- kedro
+- sagemaker
+- aws
+- mlops
+maintainers:
+- GetInData MLOPS <mlops@getindata.com>
+module_name: kedro_sagemaker
+short_name: kedro-sagemaker
