@@ -273,7 +273,6 @@ class KedroSageMakerGenerator:
             "execute",
             f"--pipeline={self.pipeline_name}",
             f"--node={node.name}",
-            f"--runner={SageMakerPipelinesRunner.runner_name()}",
         ]
         if as_string:
             return " ".join(cmd)

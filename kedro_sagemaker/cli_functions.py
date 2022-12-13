@@ -1,7 +1,8 @@
 import json
 import os
 from contextlib import contextmanager
-from typing import Optional, Iterator, Tuple
+from pathlib import Path
+from typing import Optional, Iterator, Tuple, Callable
 from sagemaker.workflow.pipeline import Pipeline as SageMakerPipeline
 import click
 
@@ -46,7 +47,6 @@ def get_context_and_pipeline(
             execution_role_arn,
         )
         sm_pipeline = generator.generate()
-        sm_pipeline.describe()
         yield mgr, sm_pipeline
 
 
@@ -75,3 +75,22 @@ def docker_autobuild(auto_build, click_context, image, mgr, yes):
                 fg="yellow",
             )
         )
+
+
+def write_file_and_confirm_overwrite(
+    filepath: Path,
+    auto_overwrite: bool,
+    contents: str,
+    on_denied_overwrite: Callable[[Path], None] = None,
+):
+    write = True
+    if filepath.exists():
+        write = False
+        if auto_overwrite or click.confirm(
+            f"{filepath} exists, overwrite?", default=True
+        ):
+            write = True
+    if write:
+        filepath.write_text(contents)
+    elif on_denied_overwrite:
+        on_denied_overwrite(filepath)

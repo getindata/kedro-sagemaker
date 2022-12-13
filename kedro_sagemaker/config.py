@@ -40,10 +40,10 @@ class KedroSageMakerPluginConfig(BaseModel):
 CONFIG_TEMPLATE_YAML = """
 aws:
   # Bucket name to use as a temporary storage within the pipeline job
-  bucket: {bucket}
+  bucket: "{bucket}"
   
   # AWS SageMaker Executor role ARN
-  execution_role: {execution_role}
+  execution_role: "{execution_role}"
   
   # use Kedro node tags (recommended) or node names to assign compute resources
   # use __default__ to specify the default values (for all nodes)
@@ -57,9 +57,10 @@ aws:
     # Note that SageMaker does not support underscores in pipeline names.
     # Here you can map for example add `__default__: "my-pipeline"`
     # to make the `__default__` Kedro pipeline appear as `my-pipeline` in SageMaker UI 
-    pipeline_names_mapping: {}
+    pipeline_names_mapping:
+      kedro_pipeline_name: "sagemaker-pipeline-name"
 docker:
-  image: {docker_image}
+  image: "{docker_image}"
   working_directory: /home/kedro
 """.strip()
 

@@ -13,6 +13,7 @@ from kedro_sagemaker.cli_functions import (
     get_context_and_pipeline,
     docker_autobuild,
     parse_extra_params,
+    write_file_and_confirm_overwrite,
 )
 from kedro_sagemaker.client import SageMakerClient
 from kedro_sagemaker.config import CONFIG_TEMPLATE_YAML
@@ -22,7 +23,7 @@ from kedro_sagemaker.constants import (
     KEDRO_SAGEMAKER_WORKING_DIRECTORY,
     KEDRO_SAGEMAKER_ARGS,
 )
-from kedro_sagemaker.docker import DOCKERFILE_TEMPLATE, DOCKERIGNORE_TEMPLATE
+from kedro_sagemaker.docker import DOCKERIGNORE_TEMPLATE, DOCKERFILE_TEMPLATE
 from kedro_sagemaker.runner import SageMakerPipelinesRunner
 from kedro_sagemaker.utils import (
     CliContext,
@@ -59,8 +60,16 @@ def sagemaker_group(ctx, metadata: ProjectMetadata, env):
 @click.argument("bucket")
 @click.argument("execution_role")
 @click.argument("docker_image")
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    default=False,
+    type=bool,
+    help="Auto answer yes confirm prompts",
+)
 @click.pass_obj
-def init(ctx: CliContext, bucket, execution_role, docker_image):
+def init(ctx: CliContext, bucket, execution_role, docker_image, yes: bool):
     """
     Creates basic configuration for Kedro AzureML plugin
     """
@@ -77,13 +86,20 @@ def init(ctx: CliContext, bucket, execution_role, docker_image):
 
     click.echo(f"Configuration generated in {target_path}")
 
-    dockerfile = cwd / "Dockerfile"
-    dockerfile.write_text(DOCKERFILE_TEMPLATE)
+    def on_denied_overwrite(filepath: Path):
+        click.echo(
+            click.style(
+                f"Kedro SageMaker recommends to use auto-generated {filepath.name} to ensure SageMaker-compatible docker images",
+                fg="yellow",
+            )
+        )
 
-    dockerignore = cwd / ".dockerignore"
-    dockerignore.write_text(DOCKERIGNORE_TEMPLATE)
-
-    click.echo(f"Generated Dockerfile and .dockerignore files in {cwd}")
+    write_file_and_confirm_overwrite(
+        cwd / "Dockerfile", yes, DOCKERFILE_TEMPLATE, on_denied_overwrite
+    )
+    write_file_and_confirm_overwrite(
+        cwd / ".dockerignore", yes, DOCKERIGNORE_TEMPLATE, on_denied_overwrite
+    )
 
     click.echo(
         click.style(
@@ -178,7 +194,7 @@ def run(
         is_ok = client.run(
             local,
             wait_for_completion,
-            lambda p: click.echo(f"Pipeline ARN: {p['PipelineArn']}"),
+            lambda p: click.echo(f"Pipeline ARN: {p.describe()['PipelineArn']}"),
         )
 
         if is_ok:
@@ -227,7 +243,6 @@ def run(
     type=str,
     help="Parameters override in form of JSON string",
 )
-@click.option("--wait-for-completion", type=bool, is_flag=True, default=False)
 @click.option(
     "--local",
     is_flag=True,
@@ -250,12 +265,15 @@ def compile(
         _,
         sm_pipeline,
     ):
-        with (Path.cwd() / "pipeline.json").open("w") as f:
+        target_path = Path.cwd() / "pipeline.json"
+        with target_path.open("w") as f:
             json.dump(json.loads(sm_pipeline.definition()), f, indent=4)
+        click.echo(f"Pipeline compiled to {target_path}")
 
 
 @sagemaker_group.command(
-    hidden=True, context_settings=dict(ignore_unknown_options=True)
+    hidden=True,
+    context_settings=dict(ignore_unknown_options=True, allow_extra_args=True),
 )
 @click.pass_obj
 @click.pass_context
@@ -271,7 +289,7 @@ def entrypoint(click_context: click.Context, ctx: CliContext, *args, **kwargs):
 
     args = os.environ.get(KEDRO_SAGEMAKER_ARGS)
 
-    os.chdir(os.environ[KEDRO_SAGEMAKER_WORKING_DIRECTORY])
+    os.chdir(os.environ.get(KEDRO_SAGEMAKER_WORKING_DIRECTORY))
     kedro_params = parse_flat_parameters(os.environ)
 
     result = subprocess.run(

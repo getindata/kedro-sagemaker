@@ -2,7 +2,7 @@
 # and modified on 2022.12.13
 
 DOCKERFILE_TEMPLATE = """
-ARG BASE_IMAGE=python:3.9.15
+ARG BASE_IMAGE=python:3.9
 FROM $BASE_IMAGE
 
 # install project requirements
@@ -14,7 +14,7 @@ COPY . .
 
 # Do not change the default entrypoint, it will break the Kedro SageMaker integration!
 ENTRYPOINT ["kedro", "sagemaker", "entrypoint"]
-""".strip()
+""".lstrip()
 
 DOCKERIGNORE_TEMPLATE = """
 ##########################
@@ -44,4 +44,4 @@ results
 !references/.gitkeep
 !results/.gitkeep
 !data/01_raw
-""".strip()
+""".lstrip()
