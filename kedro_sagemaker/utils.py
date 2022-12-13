@@ -1,3 +1,5 @@
+import subprocess
+import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, MutableMapping, Union, List
@@ -100,6 +102,20 @@ def parse_flat_parameters(
     key_prefix: str = KEDRO_SAGEMAKER_PARAM_KEY_PREFIX,
     value_prefix: str = KEDRO_SAGEMAKER_PARAM_VALUE_PREFIX,
 ) -> dict:
+    """
+    This function takes `param_source` (most likely os.environ)
+    searches for the keys starting with `key_prefix`/`value_prefix`
+    and parses them from the form:
+    "key_prefix_0": "name.of.the.param"
+    "value_prefix_0": "666"
+    into dictionary: {"name": {"of": {"the": {"param": 666}}}}
+
+    :param param_source:
+    :param key_prefix:
+    :param value_prefix:
+    :return:
+    """
+
     def sorted_keys_with_prefix(prefix) -> List[str]:
         return sorted(
             (x for x in param_source.keys() if x.startswith(prefix)),
@@ -129,3 +145,29 @@ def parse_flat_parameters(
             except json.JSONDecodeError:
                 p[key] = value
     return params
+
+
+def docker_build(path: str, image: str) -> int:
+    rv = subprocess.run(
+        [
+            "docker",
+            "build",
+            path,
+            "-t",
+            image,
+        ],
+        stdout=sys.stdout,
+        stderr=subprocess.STDOUT,
+    ).returncode
+    if rv:
+        logger.error("Docker build has failed.")
+    return rv
+
+
+def docker_push(image: str) -> int:
+    rv = subprocess.run(
+        ["docker", "push", image], stdout=sys.stdout, stderr=subprocess.STDOUT
+    ).returncode
+    if rv:
+        logger.error("Docker push has failed.")
+    return rv

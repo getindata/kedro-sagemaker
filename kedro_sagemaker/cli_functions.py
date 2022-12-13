@@ -6,7 +6,12 @@ from sagemaker.workflow.pipeline import Pipeline as SageMakerPipeline
 import click
 
 from kedro_sagemaker.generator import KedroSageMakerGenerator
-from kedro_sagemaker.utils import KedroContextManager, CliContext
+from kedro_sagemaker.utils import (
+    KedroContextManager,
+    CliContext,
+    docker_build,
+    docker_push,
+)
 
 
 def parse_extra_params(params, silent=False):
@@ -43,3 +48,30 @@ def get_context_and_pipeline(
         sm_pipeline = generator.generate()
         sm_pipeline.describe()
         yield mgr, sm_pipeline
+
+
+def docker_autobuild(auto_build, click_context, image, mgr, yes):
+    if auto_build:
+        if (splits := image.split(":"))[-1] != "latest" and len(splits) > 1:
+            click.echo(
+                click.style(
+                    f"This operation will overwrite the target image with {splits[-1]} tag at remote location.",
+                    fg="yellow",
+                )
+            )
+
+        if not yes and not click.confirm("Continue?", default=True):
+            click_context.exit(1)
+
+        if (rv := docker_build(str(mgr.context.project_path), image)) != 0:
+            click_context.exit(rv)
+        if (rv := docker_push(image)) != 0:
+            click_context.exit(rv)
+    else:
+        click.echo(
+            click.style(
+                "Make sure that you've built and pushed your image to run the latest version remotely.\
+ Consider using '--auto-build' parameter.",
+                fg="yellow",
+            )
+        )

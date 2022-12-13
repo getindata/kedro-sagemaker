@@ -3,13 +3,17 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from shlex import shlex
+import shlex
 from typing import Optional
 
 import click
 from kedro.framework.startup import ProjectMetadata
 
-from kedro_sagemaker.cli_functions import get_context_and_pipeline
+from kedro_sagemaker.cli_functions import (
+    get_context_and_pipeline,
+    docker_autobuild,
+    parse_extra_params,
+)
 from kedro_sagemaker.client import SageMakerClient
 from kedro_sagemaker.config import CONFIG_TEMPLATE_YAML
 from kedro_sagemaker.constants import (
@@ -18,7 +22,13 @@ from kedro_sagemaker.constants import (
     KEDRO_SAGEMAKER_WORKING_DIRECTORY,
     KEDRO_SAGEMAKER_ARGS,
 )
-from kedro_sagemaker.utils import CliContext, KedroContextManager, parse_flat_parameters
+from kedro_sagemaker.docker import DOCKERFILE_TEMPLATE, DOCKERIGNORE_TEMPLATE
+from kedro_sagemaker.runner import SageMakerPipelinesRunner
+from kedro_sagemaker.utils import (
+    CliContext,
+    KedroContextManager,
+    parse_flat_parameters,
+)
 
 
 @click.group("SageMaker")
@@ -54,7 +64,8 @@ def init(ctx: CliContext, bucket, execution_role, docker_image):
     """
     Creates basic configuration for Kedro AzureML plugin
     """
-    target_path = Path.cwd().joinpath("conf/base/sagemaker.yml")
+    cwd = Path.cwd()
+    target_path = cwd.joinpath("conf/base/sagemaker.yml")
     cfg = CONFIG_TEMPLATE_YAML.format(
         **{
             "bucket": bucket,
@@ -65,6 +76,14 @@ def init(ctx: CliContext, bucket, execution_role, docker_image):
     target_path.write_text(cfg)
 
     click.echo(f"Configuration generated in {target_path}")
+
+    dockerfile = cwd / "Dockerfile"
+    dockerfile.write_text(DOCKERFILE_TEMPLATE)
+
+    dockerignore = cwd / ".dockerignore"
+    dockerignore.write_text(DOCKERIGNORE_TEMPLATE)
+
+    click.echo(f"Generated Dockerfile and .dockerignore files in {cwd}")
 
     click.echo(
         click.style(
@@ -104,6 +123,7 @@ def init(ctx: CliContext, bucket, execution_role, docker_image):
     type=str,
     help="Parameters override in form of JSON string",
 )
+@click.option("--wait-for-completion", type=bool, is_flag=True, default=False)
 @click.option(
     "--local",
     is_flag=True,
@@ -111,7 +131,21 @@ def init(ctx: CliContext, bucket, execution_role, docker_image):
     default=False,
     help="If set, SageMaker LocalSession will be used to run the pipeline",
 )
-@click.option("--wait-for-completion", type=bool, is_flag=True, default=False)
+@click.option(
+    "--auto-build",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Specify to docker build and push before scheduling a run",
+)
+@click.option(
+    "--yes",
+    "-y",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Auto answer yes confirm prompts",
+)
 @click.pass_obj
 @click.pass_context
 def run(
@@ -123,6 +157,8 @@ def run(
     params: str,
     wait_for_completion: bool,
     local: bool,
+    auto_build: bool,
+    yes: bool,
 ):
     mgr: KedroContextManager
     with get_context_and_pipeline(
@@ -131,9 +167,14 @@ def run(
         mgr,
         sm_pipeline,
     ):
+        docker_autobuild(
+            auto_build, click_context, image or mgr.plugin_config.docker.image, mgr, yes
+        )
+
         client = SageMakerClient(
             sm_pipeline, execution_role or mgr.plugin_config.aws.execution_role
         )
+
         is_ok = client.run(
             local,
             wait_for_completion,
@@ -157,6 +198,60 @@ def run(
             )
 
         click_context.exit(exit_code)
+
+
+@sagemaker_group.command()
+@click.option(
+    "-r",
+    "--execution_role",
+    type=str,
+    help="SageMaker execution role",
+)
+@click.option(
+    "-i",
+    "--image",
+    type=str,
+    help="Docker image to use for pipeline execution.",
+)
+@click.option(
+    "-p",
+    "--pipeline",
+    "pipeline",
+    type=str,
+    help="Name of pipeline to run",
+    default="__default__",
+)
+@click.option(
+    "--params",
+    "params",
+    type=str,
+    help="Parameters override in form of JSON string",
+)
+@click.option("--wait-for-completion", type=bool, is_flag=True, default=False)
+@click.option(
+    "--local",
+    is_flag=True,
+    type=bool,
+    default=False,
+    help="If set, SageMaker LocalSession will be used to run the pipeline",
+)
+@click.pass_obj
+def compile(
+    ctx: CliContext,
+    execution_role: Optional[str],
+    image: Optional[str],
+    pipeline: str,
+    params: str,
+    local: bool,
+):
+    with get_context_and_pipeline(
+        ctx, image, pipeline, params, local, execution_role
+    ) as (
+        _,
+        sm_pipeline,
+    ):
+        with (Path.cwd() / "pipeline.json").open("w") as f:
+            json.dump(json.loads(sm_pipeline.definition()), f, indent=4)
 
 
 @sagemaker_group.command(
@@ -188,3 +283,31 @@ def entrypoint(click_context: click.Context, ctx: CliContext, *args, **kwargs):
     )
 
     click_context.exit(result.returncode)
+
+
+@sagemaker_group.command(hidden=True)
+@click.option(
+    "-p",
+    "--pipeline",
+    "pipeline",
+    type=str,
+    help="Name of pipeline to run",
+    default="__default__",
+)
+@click.option(
+    "-n", "--node", "node", type=str, help="Name of the node to run", required=True
+)
+@click.option(
+    "--params",
+    "params",
+    type=str,
+    help="Parameters override in form of JSON string",
+)
+@click.pass_obj
+def execute(ctx: CliContext, pipeline: str, node: str, params: str):
+    parameters = parse_extra_params(params)
+    with KedroContextManager(
+        ctx.metadata.package_name, env=ctx.env, extra_params=parameters
+    ) as mgr:
+        runner = SageMakerPipelinesRunner()
+        mgr.session.run(pipeline, node_names=[node], runner=runner)

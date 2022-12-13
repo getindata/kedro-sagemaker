@@ -250,13 +250,7 @@ class KedroSageMakerGenerator:
         step = ProcessingStep(
             sm_node_name,
             processor=Processor(
-                entrypoint=[
-                    "kedro",
-                    "run",
-                    f"--pipeline={self.pipeline_name}",
-                    f"--node={node.name}",
-                    f"--runner={SageMakerPipelinesRunner.runner_name()}",
-                ],
+                entrypoint=self._get_kedro_command(node),
                 role=self._execution_role,
                 image_uri=self.config.docker.image,
                 instance_count=node_resources.instance_count,
@@ -271,6 +265,20 @@ class KedroSageMakerGenerator:
             description=node.name,
         )
         return step
+
+    def _get_kedro_command(self, node, as_string=False) -> Union[str, List[str]]:
+        cmd = [
+            "kedro",
+            "sagemaker",
+            "execute",
+            f"--pipeline={self.pipeline_name}",
+            f"--node={node.name}",
+            f"--runner={SageMakerPipelinesRunner.runner_name()}",
+        ]
+        if as_string:
+            return " ".join(cmd)
+        else:
+            return cmd
 
     def _create_model_register_steps(
         self,
@@ -344,11 +352,11 @@ class KedroSageMakerGenerator:
                 ],
                 enable_sagemaker_metrics=len(sm_metrics.metrics) > 0,
                 environment={
-                    KEDRO_SAGEMAKER_ARGS: f"kedro run --pipeline={self.pipeline_name} --node={node.name} --runner={SageMakerPipelinesRunner.runner_name()}",
+                    KEDRO_SAGEMAKER_ARGS: self._get_kedro_command(node, as_string=True),
                     KEDRO_SAGEMAKER_RUNNER_CONFIG: runner_config.json(),
                     KEDRO_SAGEMAKER_WORKING_DIRECTORY: self.config.docker.working_directory,
-                    "PYTHONPATH": "/home/kedro/src",
-                    # TODO - this will not be needed if plugin is installed, I hope :D,
+                    # "PYTHONPATH": "/home/kedro/src",
+                    # # TODO - this will not be needed if plugin is installed, I hope :D,
                     **sm_param_envs,
                 },
                 base_job_name=sm_node_name,
