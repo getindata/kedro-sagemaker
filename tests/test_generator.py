@@ -1,10 +1,13 @@
+import json
 from unittest.mock import patch
 
+from kedro.io import DataCatalog
 from kedro.pipeline import node, pipeline
 from sagemaker.workflow import pipeline_context
 from sagemaker.workflow.steps import StepTypeEnum
 
-from kedro_sagemaker.config import _CONFIG_TEMPLATE
+from kedro_sagemaker.config import _CONFIG_TEMPLATE, ResourceConfig
+from kedro_sagemaker.datasets import SageMakerModelDataset
 from kedro_sagemaker.generator import KedroSageMakerGenerator
 
 
@@ -69,9 +72,7 @@ def test_should_use_mapping_for_pipeline_name(context_mock):
     # given
     config = _CONFIG_TEMPLATE.copy(deep=True)
     config.aws.sagemaker.pipeline_names_mapping = {"__default__": "training"}
-    generator = KedroSageMakerGenerator(
-        "__default__", context_mock, config, is_local=True
-    )
+    generator = KedroSageMakerGenerator("__default__", context_mock, config)
 
     # when
     pipeline = generator.generate()
@@ -91,9 +92,7 @@ def test_should_process_kedro_parameters(context_mock):
         "is_great_plugin": True,
         "features": ["age", "gender"],
     }
-    generator = KedroSageMakerGenerator(
-        "__default__", context_mock, config, is_local=True
-    )
+    generator = KedroSageMakerGenerator("__default__", context_mock, config)
 
     # when
     pipeline = generator.generate()
@@ -116,3 +115,160 @@ def test_should_process_kedro_parameters(context_mock):
     assert params_transformed["is_great_plugin"].default_value is True
     assert params_transformed["features"].parameter_type.python_type == str
     assert params_transformed["features"].default_value == '["age", "gender"]'
+
+
+@patch("kedro.framework.project.pipelines", {"__default__": sample_pipeline})
+@patch("kedro.framework.context.KedroContext")
+def test_should_create_processor_based_on_the_config(context_mock):
+    # given
+    config = _CONFIG_TEMPLATE.copy(deep=True)
+    config.aws.execution_role = "__execution_role__"
+    config.aws.bucket = "__bucket_name__"
+    config.docker.image = "__image_uri__"
+    config.aws.resources["node1"] = ResourceConfig(
+        instance_type="__instance_type__", instance_count=42, timeout_seconds=4242
+    )
+    generator = KedroSageMakerGenerator("__default__", context_mock, config)
+
+    # when
+    pipeline = generator.generate()
+
+    # then
+    processor = pipeline.steps[0].processor
+    assert processor.entrypoint == [
+        "kedro",
+        "sagemaker",
+        "execute",
+        "--pipeline=__default__",
+        "--node=node1",
+    ]
+    assert processor.role == "__execution_role__"
+    assert processor.image_uri == "__image_uri__"
+    assert processor.instance_count == 42
+    assert processor.instance_type == "__instance_type__"
+    assert processor.max_runtime_in_seconds == 4242
+    assert (
+        json.loads(processor.env["KEDRO_SAGEMAKER_RUNNER_CONFIG"])["bucket"]
+        == "__bucket_name__"
+    )
+    assert "run_id" in json.loads(processor.env["KEDRO_SAGEMAKER_RUNNER_CONFIG"])
+
+
+@patch("kedro.framework.project.pipelines", {"__default__": sample_pipeline})
+@patch("kedro.framework.context.KedroContext")
+def test_should_use_default_resources_spec_in_processing_step(context_mock):
+    # given
+    config = _CONFIG_TEMPLATE.copy(deep=True)
+    config.aws.resources["__default__"] = ResourceConfig(
+        instance_type="__default_instance_type__",
+        instance_count=142,
+        timeout_seconds=14242,
+    )
+    generator = KedroSageMakerGenerator("__default__", context_mock, config)
+
+    # when
+    pipeline = generator.generate()
+
+    # then
+    processor = pipeline.steps[0].processor
+    assert processor.instance_count == 142
+    assert processor.instance_type == "__default_instance_type__"
+    assert processor.max_runtime_in_seconds == 14242
+
+
+@patch("kedro.framework.project.pipelines", {"__default__": sample_pipeline})
+@patch("kedro.framework.context.KedroContext")
+@patch("kedro_sagemaker.generator.Model")
+@patch("kedro_sagemaker.generator.ModelStep")
+def test_should_generate_training_steps_and_register_model(
+    model_step_mock, model_mock, context_mock
+):
+    # given
+    config = _CONFIG_TEMPLATE.copy(deep=True)
+    config.docker.image = "__image_uri__"
+    context_mock.catalog = DataCatalog({"i2": SageMakerModelDataset()})
+    generator = KedroSageMakerGenerator(
+        "__default__", context_mock, config, is_local=False
+    )
+
+    # when
+    pipeline = generator.generate()
+
+    # then
+    assert len(pipeline.steps) == 3
+    assert pipeline.steps[1].step_type == StepTypeEnum.TRAINING
+    assert pipeline.steps[2].step_type == StepTypeEnum.PROCESSING
+    model_properties = model_mock.call_args.kwargs
+    assert model_properties["name"] == "i2"
+    assert model_properties["image_uri"] == "__image_uri__"
+    assert model_step_mock.call_args_list[0].args[0] == "CreateModel0"
+    assert model_step_mock.call_args_list[1].args[0] == "RegisterModel0"
+
+
+@patch("kedro.framework.project.pipelines", {"__default__": sample_pipeline})
+@patch("kedro.framework.context.KedroContext")
+@patch("kedro_sagemaker.generator.Model")
+@patch("kedro_sagemaker.generator.ModelStep")
+def test_should_generate_training_steps_and_skip_model_registration(
+    model_step_mock, model_mock, context_mock
+):
+    # given
+    config = _CONFIG_TEMPLATE.copy(deep=True)
+    context_mock.catalog = DataCatalog({"i2": SageMakerModelDataset()})
+    generator = KedroSageMakerGenerator(
+        "__default__", context_mock, config, is_local=True
+    )
+
+    # when
+    generator.generate()
+
+    # then
+    assert len(model_step_mock.call_args_list) == 1
+    assert model_step_mock.call_args_list[0].args[0] == "CreateModel0"
+    # no model registration
+
+
+@patch("kedro.framework.project.pipelines", {"__default__": sample_pipeline})
+@patch("kedro.framework.context.KedroContext")
+@patch("kedro_sagemaker.generator.Model")
+@patch("kedro_sagemaker.generator.ModelStep")
+def test_should_create_estimator_based_on_the_config(
+    model_step_mock, model_mock, context_mock
+):
+    # given
+    config = _CONFIG_TEMPLATE.copy(deep=True)
+    config.aws.execution_role = "__execution_role__"
+    config.aws.bucket = "__bucket_name__"
+    config.docker.image = "__image_uri__"
+    config.aws.resources["node1"] = ResourceConfig(
+        instance_type="__instance_type__", instance_count=42, timeout_seconds=4242
+    )
+    context_mock.catalog = DataCatalog({"i2": SageMakerModelDataset()})
+    generator = KedroSageMakerGenerator("__default__", context_mock, config)
+
+    # when
+    pipeline = generator.generate()
+
+    # then
+    estimator = pipeline.steps[1].estimator
+    assert estimator.image_uri == "__image_uri__"
+    assert estimator.role == "__execution_role__"
+    assert estimator.instance_count == 42
+    assert estimator.instance_type == "__instance_type__"
+    assert estimator.max_run == 4242
+    assert estimator.enable_sagemaker_metrics is False
+    assert len(estimator.metric_definitions) == 0
+    assert (
+        estimator.environment["KEDRO_SAGEMAKER_ARGS"]
+        == "kedro sagemaker execute --pipeline=__default__ --node=node1"
+    )
+    assert estimator.environment["KEDRO_SAGEMAKER_WD"] == "/home/kedro"
+    assert (
+        json.loads(estimator.environment["KEDRO_SAGEMAKER_RUNNER_CONFIG"])["bucket"]
+        == "__bucket_name__"
+    )
+    assert "run_id" in json.loads(
+        estimator.environment["KEDRO_SAGEMAKER_RUNNER_CONFIG"]
+    )
+
+    # TODO estimator metrics
