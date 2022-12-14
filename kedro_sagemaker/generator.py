@@ -4,7 +4,6 @@ from typing import (
     List,
     Union,
     Tuple,
-    Any,
     Dict,
     Optional,
     Iterator,
@@ -43,7 +42,6 @@ from kedro_sagemaker.constants import (
 )
 from kedro_sagemaker.datasets import SageMakerModelDataset
 from kedro_sagemaker.runner import (
-    SageMakerPipelinesRunner,
     KedroSageMakerRunnerConfig,
 )
 from kedro_sagemaker.utils import flatten_dict
