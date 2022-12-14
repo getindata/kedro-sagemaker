@@ -6,13 +6,9 @@ from kedro.pipeline import node, pipeline
 from sagemaker.workflow import pipeline_context
 from sagemaker.workflow.steps import StepTypeEnum
 
-from kedro_sagemaker.config import (
-    _CONFIG_TEMPLATE,
-    ResourceConfig,
-    SageMakerMetricsTrackingConfig,
-)
-from kedro_sagemaker.constants import KEDRO_SAGEMAKER_METRICS
+from kedro_sagemaker.config import _CONFIG_TEMPLATE, ResourceConfig
 from kedro_sagemaker.datasets import SageMakerModelDataset
+from kedro_sagemaker.decorators import sagemaker_metrics
 from kedro_sagemaker.generator import KedroSageMakerGenerator
 
 
@@ -283,12 +279,14 @@ def test_should_mark_node_as_estimator_if_it_exposes_metrics(context_mock):
     # given
     config = _CONFIG_TEMPLATE.copy(deep=True)
     generator = KedroSageMakerGenerator("__default__", context_mock, config)
+
     try:
-        setattr(
-            identity,
-            KEDRO_SAGEMAKER_METRICS,
-            SageMakerMetricsTrackingConfig({"auc": "AUC: .*"}),
-        )
+
+        @sagemaker_metrics({"auc": "AUC: .*"})
+        def identity_with_metric(x):
+            pass
+
+        sample_pipeline.nodes[0].func = identity_with_metric
 
         # when
         pipeline = generator.generate()
@@ -296,9 +294,9 @@ def test_should_mark_node_as_estimator_if_it_exposes_metrics(context_mock):
         # then
         assert len(pipeline.steps) == 2
         assert pipeline.steps[0].step_type == StepTypeEnum.TRAINING
-        assert pipeline.steps[1].step_type == StepTypeEnum.TRAINING
-        estimator = pipeline.steps[1].estimator
+        assert pipeline.steps[1].step_type == StepTypeEnum.PROCESSING
+        estimator = pipeline.steps[0].estimator
         assert estimator.enable_sagemaker_metrics is True
         assert estimator.metric_definitions == [{"Name": "auc", "Regex": "AUC: .*"}]
     finally:
-        delattr(identity, KEDRO_SAGEMAKER_METRICS)
+        sample_pipeline.nodes[0].func = identity
