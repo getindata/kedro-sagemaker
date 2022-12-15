@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class SageMakerModelDataset(AbstractDataSet):
     STORE_METHODS = ("pickle", "blob", "cloudpickle")
+    SAGEMAKER_DEFAULT_PATH = "/opt/ml"
     MODEL_TAR_GZ = "model.tar.gz"
 
     def __init__(
@@ -44,13 +45,15 @@ class SageMakerModelDataset(AbstractDataSet):
         self.sagemaker_path = sagemaker_path
 
     def _load(self) -> Union[Any, dict]:
-        for p in Path("/opt/ml").rglob(self.MODEL_TAR_GZ):
+        load_kwargs = deepcopy(self.load_kwargs)
+        search_path = load_kwargs.pop("path", None) or self.SAGEMAKER_DEFAULT_PATH
+        for p in Path(search_path).rglob(self.MODEL_TAR_GZ):
             if p.is_file():
                 with tarfile.open(p, "r:gz") as tf:
-                    tf.extractall("/opt/ml/model")
+                    tf.extractall(self.sagemaker_path)
                     break
         else:
-            raise DataSetError("No model.tar.gz found in /opt/ml")
+            raise DataSetError(f"No model.tar.gz found in {search_path}")
 
         to_load = {}
         for p in Path(self.sagemaker_path).iterdir():
@@ -63,18 +66,18 @@ class SageMakerModelDataset(AbstractDataSet):
                 logger.info(f"File to load: {p.absolute()}")
                 to_load[p.name] = p
 
-        def _pickle(f):
+        def _pickle(fo):
             import pickle
 
-            return pickle.load(f, **(self.load_kwargs or {}))
+            return pickle.load(fo, **(load_kwargs or {}))
 
-        def _cloudpickle(f):
+        def _cloudpickle(fo):
             import cloudpickle
 
-            return cloudpickle.load(f, **(self.load_kwargs or {}))
+            return cloudpickle.load(fo, **(load_kwargs or {}))
 
         methods = {
-            "blob": lambda f: f.read(),
+            "blob": lambda fo: fo.read(),
             "pickle": _pickle,
             "cloudpickle": _cloudpickle,
         }
