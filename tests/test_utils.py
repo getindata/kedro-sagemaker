@@ -1,4 +1,6 @@
 import json
+import os
+from unittest.mock import patch, Mock
 
 import pytest
 
@@ -6,7 +8,12 @@ from kedro_sagemaker.constants import (
     KEDRO_SAGEMAKER_PARAM_KEY_PREFIX,
     KEDRO_SAGEMAKER_PARAM_VALUE_PREFIX,
 )
-from kedro_sagemaker.utils import parse_flat_parameters
+from kedro_sagemaker.utils import (
+    parse_flat_parameters,
+    is_distributed_master_node,
+    docker_push,
+    docker_build,
+)
 
 
 @pytest.mark.parametrize(
@@ -79,3 +86,48 @@ def test_can_parse_flat_kedro_params(params):
         assert (
             json.loads(json.dumps(v)) == expected
         ), "Cannot serialize/deserialize returned object"
+
+
+@pytest.mark.parametrize(
+    "environment,expected_master",
+    [
+        ({"TF_CONFIG": "ASD"}, False),
+        ({"TF_CONFIG": json.dumps({"my_config": "not valid"})}, False),
+        ({"RANK": "0"}, True),
+        ({"RANK": "1"}, False),
+        ({"RANK": "666"}, False),
+        ({"OMPI_COMM_WORLD_RANK": "0"}, True),
+        ({"OMPI_COMM_WORLD_RANK": "1"}, False),
+        ({"TF_CONFIG": json.dumps({"task": {"type": "master"}})}, True),
+        ({"TF_CONFIG": json.dumps({"task": {"type": "chief"}})}, True),
+        ({"TF_CONFIG": json.dumps({"task": {"type": "worker"}})}, False),
+        ({"TF_CONFIG": json.dumps({"task": {"type": "worker", "index": 1}})}, False),
+        ({"TF_CONFIG": json.dumps({"task": {"type": "worker", "index": 0}})}, True),
+        ({}, True),
+    ],
+)
+def test_can_detect_distributed_master_node(environment, expected_master):
+    with patch.dict(os.environ, environment, clear=True):
+        assert (
+            status := is_distributed_master_node()
+        ) == expected_master, f"Invalid master node status detected, should be {expected_master} but was {status}"
+
+
+@pytest.mark.parametrize("exit_code", range(10))
+def test_docker_build(exit_code):
+    with patch(
+        "subprocess.run", return_value=Mock(returncode=exit_code)
+    ) as subprocess_run:
+        result = docker_build(".", "my_image:latest")
+        assert exit_code == result, "Invalid exit code"
+        subprocess_run.assert_called_once()
+
+
+@pytest.mark.parametrize("exit_code", range(10))
+def test_docker_push(exit_code):
+    with patch(
+        "subprocess.run", return_value=Mock(returncode=exit_code)
+    ) as subprocess_run:
+        result = docker_push("my_image:latest")
+        assert exit_code == result, "Invalid exit code"
+        subprocess_run.assert_called_once()
