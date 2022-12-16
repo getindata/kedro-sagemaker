@@ -10,11 +10,7 @@ from kedro_sagemaker.config import _CONFIG_TEMPLATE, ResourceConfig
 from kedro_sagemaker.datasets import SageMakerModelDataset
 from kedro_sagemaker.decorators import sagemaker_metrics
 from kedro_sagemaker.generator import KedroSageMakerGenerator
-
-
-def identity(x):
-    return x
-
+from tests.utils import identity
 
 sample_pipeline = pipeline(
     [

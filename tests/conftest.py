@@ -1,19 +1,43 @@
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock, Mock
 from uuid import uuid4
 
 import pytest
 from kedro.pipeline import pipeline, Pipeline, node
 
+from kedro_sagemaker.cli_functions import get_context_and_pipeline
 from kedro_sagemaker.constants import KEDRO_SAGEMAKER_RUNNER_CONFIG
 from kedro_sagemaker.datasets import CloudpickleDataset, DistributedCloudpickleDataset
 from kedro_sagemaker.runner import KedroSageMakerRunnerConfig, SageMakerPipelinesRunner
+from kedro_sagemaker.utils import CliContext
+from tests.utils import identity
 
 
-def identity(x):
-    return x
+@pytest.fixture()
+def patched_kedro_package():
+    with patch("kedro.framework.project.PACKAGE_NAME", "tests") as patched_package:
+        original_dir = os.getcwd()
+        os.chdir("tests")
+        yield patched_package
+        os.chdir(original_dir)
+
+
+@pytest.fixture()
+def context_manager_and_pipeline(patched_kedro_package, dummy_pipeline):
+    with patch(
+        "kedro.framework.project.pipelines",
+        return_value={"__default__": dummy_pipeline},
+    ), patch("kedro.framework.session.KedroSession"):
+        with get_context_and_pipeline(
+            CliContext("tests", Mock(package_name="tests")),
+            "docker_image:latest",
+            "__default__",
+            "",
+            is_local=False,
+        ) as cx_p:
+            yield cx_p
 
 
 @pytest.fixture(params=[CloudpickleDataset, DistributedCloudpickleDataset])
@@ -45,7 +69,6 @@ def patched_sagemaker_runner(patched_cloudpickle_dataset, request):
 
 @pytest.fixture()
 def dummy_pipeline() -> Pipeline:
-
     return pipeline(
         [
             node(identity, inputs="input_data", outputs="i2", name="node1"),
