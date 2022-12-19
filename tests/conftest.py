@@ -25,6 +25,13 @@ def patched_kedro_package():
 
 
 @pytest.fixture()
+def cli_context() -> CliContext:
+    metadata = MagicMock()
+    metadata.package_name = "tests"
+    return CliContext("base", metadata)
+
+
+@pytest.fixture()
 def context_manager_and_pipeline(patched_kedro_package, dummy_pipeline):
     with patch(
         "kedro.framework.project.pipelines",

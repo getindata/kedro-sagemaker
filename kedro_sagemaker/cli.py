@@ -115,7 +115,7 @@ def init(ctx: CliContext, bucket, execution_role, docker_image, yes: bool):
 @sagemaker_group.command()
 @click.option(
     "-r",
-    "--execution_role",
+    "--execution-role",
     type=str,
     help="SageMaker execution role",
 )
@@ -219,7 +219,7 @@ def run(
 @sagemaker_group.command()
 @click.option(
     "-r",
-    "--execution_role",
+    "--execution-role",
     type=str,
     help="SageMaker execution role",
 )
@@ -250,6 +250,12 @@ def run(
     default=False,
     help="If set, SageMaker LocalSession will be used to run the pipeline",
 )
+@click.option(
+    "--output-path",
+    type=click.types.Path(exists=False, dir_okay=False),
+    default="pipeline.json",
+    help="Path to output pipeline JSON file. Defaults to ./pipeline.json",
+)
 @click.pass_obj
 def compile(
     ctx: CliContext,
@@ -258,6 +264,7 @@ def compile(
     pipeline: str,
     params: str,
     local: bool,
+    output_path: str,
 ):
     with get_context_and_pipeline(
         ctx, image, pipeline, params, local, execution_role
@@ -265,7 +272,7 @@ def compile(
         _,
         sm_pipeline,
     ):
-        target_path = Path.cwd() / "pipeline.json"
+        target_path = Path(output_path)
         with target_path.open("w") as f:
             json.dump(json.loads(sm_pipeline.definition()), f, indent=4)
         click.echo(f"Pipeline compiled to {target_path}")
