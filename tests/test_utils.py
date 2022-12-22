@@ -1,6 +1,6 @@
 import json
 import os
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -9,10 +9,10 @@ from kedro_sagemaker.constants import (
     KEDRO_SAGEMAKER_PARAM_VALUE_PREFIX,
 )
 from kedro_sagemaker.utils import (
-    parse_flat_parameters,
-    is_distributed_master_node,
-    docker_push,
     docker_build,
+    docker_push,
+    is_distributed_master_node,
+    parse_flat_parameters,
 )
 
 

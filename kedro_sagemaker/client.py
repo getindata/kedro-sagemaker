@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Callable
+from typing import Callable, Optional
 
 from sagemaker.workflow.pipeline import Pipeline as SageMakerPipeline
 
@@ -27,7 +27,7 @@ class SageMakerClient:
                 smp.wait()
                 return True
             except Exception:
-                logger.exception(f"Error while running the pipeline", exc_info=True)
+                logger.exception("Error while running the pipeline", exc_info=True)
                 return False
         else:
             return True

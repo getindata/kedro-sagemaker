@@ -1,16 +1,22 @@
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import MagicMock, Mock, patch
 from uuid import uuid4
 
 import pytest
-from kedro.pipeline import pipeline, Pipeline, node
+from kedro.pipeline import Pipeline, node, pipeline
 
 from kedro_sagemaker.cli_functions import get_context_and_pipeline
 from kedro_sagemaker.constants import KEDRO_SAGEMAKER_RUNNER_CONFIG
-from kedro_sagemaker.datasets import CloudpickleDataset, DistributedCloudpickleDataset
-from kedro_sagemaker.runner import KedroSageMakerRunnerConfig, SageMakerPipelinesRunner
+from kedro_sagemaker.datasets import (
+    CloudpickleDataset,
+    DistributedCloudpickleDataset,
+)
+from kedro_sagemaker.runner import (
+    KedroSageMakerRunnerConfig,
+    SageMakerPipelinesRunner,
+)
 from kedro_sagemaker.utils import CliContext
 from tests.utils import identity
 

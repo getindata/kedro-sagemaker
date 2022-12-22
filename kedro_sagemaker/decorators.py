@@ -1,12 +1,8 @@
 import logging
 from functools import wraps
 
-from kedro_sagemaker.config import (
-    SageMakerMetricsTrackingConfig,
-)
-from kedro_sagemaker.constants import (
-    KEDRO_SAGEMAKER_METRICS,
-)
+from kedro_sagemaker.config import SageMakerMetricsTrackingConfig
+from kedro_sagemaker.constants import KEDRO_SAGEMAKER_METRICS
 
 logger = logging.getLogger(__name__)
 

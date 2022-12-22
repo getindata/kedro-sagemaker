@@ -15,9 +15,9 @@ from kedro.io import DataSetError
 
 from kedro_sagemaker.constants import KEDRO_SAGEMAKER_S3_TEMP_DIR_NAME
 from kedro_sagemaker.datasets import (
-    SageMakerModelDataset,
     CloudpickleDataset,
     DistributedCloudpickleDataset,
+    SageMakerModelDataset,
 )
 
 

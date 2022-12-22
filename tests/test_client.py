@@ -1,10 +1,8 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 
 from kedro_sagemaker.client import SageMakerClient
-from kedro_sagemaker.config import _CONFIG_TEMPLATE
-from kedro_sagemaker.generator import KedroSageMakerGenerator
 
 
 @pytest.mark.parametrize("is_local", (True, False), ids=("local", "not local"))

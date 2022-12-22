@@ -8,15 +8,12 @@ from kedro.runner import SequentialRunner
 from pluggy import PluginManager
 from pydantic import BaseModel
 
-from kedro_sagemaker.constants import (
-    KEDRO_SAGEMAKER_RUNNER_CONFIG,
-)
+from kedro_sagemaker.constants import KEDRO_SAGEMAKER_RUNNER_CONFIG
 from kedro_sagemaker.datasets import (
     CloudpickleDataset,
     DistributedCloudpickleDataset,
 )
 from kedro_sagemaker.utils import is_distributed_environment
-
 
 logger = logging.getLogger(__name__)
 

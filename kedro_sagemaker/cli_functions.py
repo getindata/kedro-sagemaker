@@ -1,15 +1,15 @@
 import json
-import os
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional, Iterator, Tuple, Callable
-from sagemaker.workflow.pipeline import Pipeline as SageMakerPipeline
+from typing import Callable, Iterator, Optional, Tuple
+
 import click
+from sagemaker.workflow.pipeline import Pipeline as SageMakerPipeline
 
 from kedro_sagemaker.generator import KedroSageMakerGenerator
 from kedro_sagemaker.utils import (
-    KedroContextManager,
     CliContext,
+    KedroContextManager,
     docker_build,
     docker_push,
 )

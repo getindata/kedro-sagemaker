@@ -1,49 +1,43 @@
 import json
 from itertools import chain
-from typing import (
-    List,
-    Union,
-    Tuple,
-    Dict,
-    Optional,
-    Iterator,
-)
+from typing import Dict, Iterator, List, Optional, Tuple, Union
 from uuid import uuid4
 
 from kedro.framework.context import KedroContext
 from kedro.io import DataCatalog
 from kedro.pipeline import Pipeline as KedroPipeline
 from kedro.pipeline.node import Node as KedroNode
-from sagemaker import Processor, Model
+from sagemaker import Model, Processor
 from sagemaker.estimator import Estimator
 from sagemaker.workflow.model_step import ModelStep
 from sagemaker.workflow.parameters import (
+    ParameterBoolean,
+    ParameterFloat,
     ParameterInteger,
     ParameterString,
-    ParameterFloat,
-    ParameterBoolean,
 )
 from sagemaker.workflow.pipeline import Pipeline as SageMakerPipeline
-from sagemaker.workflow.pipeline_context import LocalPipelineSession, PipelineSession
+from sagemaker.workflow.pipeline_context import (
+    LocalPipelineSession,
+    PipelineSession,
+)
 from sagemaker.workflow.steps import ProcessingStep, TrainingStep
 
 from kedro_sagemaker.config import (
-    SageMakerMetricsTrackingConfig,
-    ResourceConfig,
     KedroSageMakerPluginConfig,
+    ResourceConfig,
+    SageMakerMetricsTrackingConfig,
 )
 from kedro_sagemaker.constants import (
-    KEDRO_SAGEMAKER_METRICS,
     KEDRO_SAGEMAKER_ARGS,
-    KEDRO_SAGEMAKER_WORKING_DIRECTORY,
+    KEDRO_SAGEMAKER_METRICS,
     KEDRO_SAGEMAKER_PARAM_KEY_PREFIX,
     KEDRO_SAGEMAKER_PARAM_VALUE_PREFIX,
     KEDRO_SAGEMAKER_RUNNER_CONFIG,
+    KEDRO_SAGEMAKER_WORKING_DIRECTORY,
 )
 from kedro_sagemaker.datasets import SageMakerModelDataset
-from kedro_sagemaker.runner import (
-    KedroSageMakerRunnerConfig,
-)
+from kedro_sagemaker.runner import KedroSageMakerRunnerConfig
 from kedro_sagemaker.utils import flatten_dict
 
 SageMakerStepType = Union[ProcessingStep, TrainingStep, ModelStep]

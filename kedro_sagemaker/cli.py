@@ -1,29 +1,29 @@
 import json
 import os
+import shlex
 import subprocess
 import sys
 from pathlib import Path
-import shlex
 from typing import Optional
 
 import click
 from kedro.framework.startup import ProjectMetadata
 
 from kedro_sagemaker.cli_functions import (
-    get_context_and_pipeline,
     docker_autobuild,
+    get_context_and_pipeline,
     parse_extra_params,
     write_file_and_confirm_overwrite,
 )
 from kedro_sagemaker.client import SageMakerClient
 from kedro_sagemaker.config import CONFIG_TEMPLATE_YAML
 from kedro_sagemaker.constants import (
-    KEDRO_SAGEMAKER_S3_TEMP_DIR_NAME,
-    KEDRO_SAGEMAKER_DEBUG,
-    KEDRO_SAGEMAKER_WORKING_DIRECTORY,
     KEDRO_SAGEMAKER_ARGS,
+    KEDRO_SAGEMAKER_DEBUG,
+    KEDRO_SAGEMAKER_S3_TEMP_DIR_NAME,
+    KEDRO_SAGEMAKER_WORKING_DIRECTORY,
 )
-from kedro_sagemaker.docker import DOCKERIGNORE_TEMPLATE, DOCKERFILE_TEMPLATE
+from kedro_sagemaker.docker import DOCKERFILE_TEMPLATE, DOCKERIGNORE_TEMPLATE
 from kedro_sagemaker.runner import SageMakerPipelinesRunner
 from kedro_sagemaker.utils import (
     CliContext,
@@ -89,7 +89,8 @@ def init(ctx: CliContext, bucket, execution_role, docker_image, yes: bool):
     def on_denied_overwrite(filepath: Path):
         click.echo(
             click.style(
-                f"Kedro SageMaker recommends to use auto-generated {filepath.name} to ensure SageMaker-compatible docker images",
+                f"Kedro SageMaker recommends to use auto-generated {filepath.name} "
+                "to ensure SageMaker-compatible docker images",
                 fg="yellow",
             )
         )

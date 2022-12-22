@@ -1,4 +1,5 @@
 import logging
+import tarfile
 from copy import deepcopy
 from functools import lru_cache
 from pathlib import Path
@@ -8,13 +9,11 @@ from typing import Any, Dict, Union
 import backoff
 import cloudpickle
 import fsspec
-from kedro.io import AbstractDataSet, DataSetError
 import zstandard as zstd
-import tarfile
+from kedro.io import AbstractDataSet, DataSetError
 
 from kedro_sagemaker.constants import KEDRO_SAGEMAKER_S3_TEMP_DIR_NAME
 from kedro_sagemaker.utils import is_distributed_master_node
-
 
 logger = logging.getLogger(__name__)
 

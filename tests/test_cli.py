@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from unittest.mock import patch, Mock, ANY, MagicMock
+from unittest.mock import MagicMock, Mock, patch
 from uuid import uuid4
 
 import pytest
@@ -13,9 +13,9 @@ from kedro_sagemaker import cli
 from kedro_sagemaker.config import KedroSageMakerPluginConfig
 from kedro_sagemaker.constants import (
     KEDRO_SAGEMAKER_ARGS,
-    KEDRO_SAGEMAKER_WORKING_DIRECTORY,
     KEDRO_SAGEMAKER_PARAM_KEY_PREFIX,
     KEDRO_SAGEMAKER_PARAM_VALUE_PREFIX,
+    KEDRO_SAGEMAKER_WORKING_DIRECTORY,
 )
 from kedro_sagemaker.generator import KedroSageMakerGenerator
 from tests.utils import assert_has_any_call_with_args
@@ -148,14 +148,14 @@ def test_can_run_the_pipeline(
         upsert.assert_called_once()
         start.assert_called_once()
 
-        assert_docker_build = lambda: assert_has_any_call_with_args(
+        assert_docker_build = lambda: assert_has_any_call_with_args(  # noqa: E731
             subprocess_run,
             ["docker", "build", str(Path.cwd().absolute()), "-t", mock_image],
         )
 
-        assert_docker_push = lambda: assert_has_any_call_with_args(
+        assert_docker_push = lambda: assert_has_any_call_with_args(  # noqa: E731
             subprocess_run, ["docker", "push", mock_image]
-        )
+        )  # noqa: E731
 
         if auto_build:
             assert_docker_build()
