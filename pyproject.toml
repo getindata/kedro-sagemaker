@@ -20,6 +20,7 @@ tox = ">=3.25.1"
 numpy = "^1.23.5"
 pandas = "^1.5.2"
 pre-commit = "^2.20.0"
+recommonmark = "^0.7.1"
 
 
 [build-system]

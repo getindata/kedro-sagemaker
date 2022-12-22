@@ -34,7 +34,7 @@ from kedro_sagemaker.utils import (
 
 @click.group("SageMaker")
 def commands():
-    """Kedro plugin adding support for Azure ML Pipelines"""
+    """Kedro plugin adding support for SageMaker Pipelines"""
     pass
 
 
@@ -177,6 +177,9 @@ def run(
     auto_build: bool,
     yes: bool,
 ):
+    """
+    Runs the pipeline on SageMaker Pipelines
+    """
     mgr: KedroContextManager
     with get_context_and_pipeline(
         ctx, image, pipeline, params, local, execution_role
@@ -267,6 +270,9 @@ def compile(
     local: bool,
     output_path: str,
 ):
+    """
+    Compiles the pipeline to a JSON file
+    """
     with get_context_and_pipeline(
         ctx, image, pipeline, params, local, execution_role
     ) as (
