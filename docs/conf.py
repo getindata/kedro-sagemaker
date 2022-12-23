@@ -6,6 +6,8 @@
 
 # -- Path setup --------------------------------------------------------------
 
+import datetime as dt
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -16,7 +18,6 @@
 import re
 
 from kedro_sagemaker import __version__ as release
-import datetime as dt
 
 # -- Project information -----------------------------------------------------
 
