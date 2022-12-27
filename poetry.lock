@@ -2197,6 +2197,18 @@ lint = ["docutils-stubs", "flake8", "mypy"]
 test = ["pytest"]
 
 [[package]]
+name = "tarsafe"
+version = "0.0.4"
+description = "A safe subclass of the TarFile class for interacting with tar files. Can be used as a direct drop-in replacement for safe usage of extractall()"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "tarsafe-0.0.4-py3-none-any.whl", hash = "sha256:12903a81f2612c09d22117115301ea510944af5caa1e358636e0fc1d0e6134df"},
+    {file = "tarsafe-0.0.4.tar.gz", hash = "sha256:a376f4138005298c11c30cb60a5081fa2c09f44384c966106fbaeee3059e9ec5"},
+]
+
+[[package]]
 name = "text-unidecode"
 version = "1.3"
 description = "The most basic Text::Unidecode port"
@@ -2583,4 +2595,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
-content-hash = "a11b0262363e5c68774efa8eb4949147d461ce4bcc456a3d65ab5fa1939fdf37"
+content-hash = "74580fef5b6710a35ca497fe35f2480500b798465e06113e9b2fb3feb19f9182"

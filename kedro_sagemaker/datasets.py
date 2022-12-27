@@ -1,5 +1,4 @@
 import logging
-import tarfile
 from copy import deepcopy
 from functools import lru_cache
 from pathlib import Path
@@ -11,6 +10,7 @@ import cloudpickle
 import fsspec
 import zstandard as zstd
 from kedro.io import AbstractDataSet, DataSetError
+from tarsafe import TarSafe
 
 from kedro_sagemaker.constants import KEDRO_SAGEMAKER_S3_TEMP_DIR_NAME
 from kedro_sagemaker.utils import is_distributed_master_node
@@ -48,7 +48,7 @@ class SageMakerModelDataset(AbstractDataSet):
         search_path = load_kwargs.pop("path", None) or self.SAGEMAKER_DEFAULT_PATH
         for p in Path(search_path).rglob(self.MODEL_TAR_GZ):
             if p.is_file():
-                with tarfile.open(p, "r:gz") as tf:
+                with TarSafe.open(p, "r:gz") as tf:
                     tf.extractall(self.sagemaker_path)
                     break
         else:
