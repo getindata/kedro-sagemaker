@@ -101,7 +101,7 @@ jobs:
 
   publish:
     if: github.event.pull_request == null && github.ref == 'refs/heads/master'
-    needs: [ codeql ]
+    needs: [ codeql, sonarcloud ]
     runs-on: ubuntu-latest
     strategy:
       matrix:
