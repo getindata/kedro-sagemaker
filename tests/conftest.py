@@ -37,6 +37,12 @@ def cli_context() -> CliContext:
     return CliContext("base", metadata)
 
 
+@pytest.fixture(autouse=True)
+def patch_boto3_session():
+    with patch("boto3.Session"):
+        yield
+
+
 @pytest.fixture()
 def context_manager_and_pipeline(patched_kedro_package, dummy_pipeline):
     with patch(

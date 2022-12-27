@@ -99,7 +99,6 @@ def test_can_compile_the_pipeline(
 @patch("click.confirm")
 @patch("subprocess.run", return_value=Mock(returncode=0))
 @patch("kedro_sagemaker.client.SageMakerClient")
-@patch("boto3.Session")
 @pytest.mark.parametrize(
     "wait_for_completion", (False, True), ids=("no wait", "wait for completion")
 )
@@ -113,7 +112,6 @@ def test_can_compile_the_pipeline(
 )
 @pytest.mark.parametrize("yes", (False, True), ids=("without --yes", "with --yes"))
 def test_can_run_the_pipeline(
-    boto3_session,
     sagemaker_client,
     subprocess_run,
     click_confirm,
@@ -128,7 +126,6 @@ def test_can_run_the_pipeline(
 ):
     mock_image = f"docker_image:{uuid4().hex}"
     started_pipeline = MagicMock()
-    _ = boto3_session
     with patch.object(
         KedroSageMakerGenerator, "get_kedro_pipeline", return_value=dummy_pipeline
     ), patch.object(SageMakerPipeline, "upsert") as upsert, patch.object(
