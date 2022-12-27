@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+-   Initial release with basic feature set
 
 ## [0.0.1] - 2022-11-24
 
