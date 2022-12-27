@@ -44,6 +44,6 @@ Options:
 
 Commands:
   compile  Compiles the pipeline to a JSON file
-  init     Creates basic configuration for Kedro AzureML plugin
+  init     Creates basic configuration for Kedro SageMaker plugin
   run      Runs the pipeline on SageMaker Pipelines
 ```

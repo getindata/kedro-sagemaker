@@ -86,7 +86,7 @@ def test_can_save_sagemaker_model_dataset(store_method, save_kwargs, tmp_path):
 @pytest.mark.parametrize(
     "dataset_class", (CloudpickleDataset, DistributedCloudpickleDataset)
 )
-def test_azure_dataset_config(dataset_class: Type):
+def test_cloudpickle_dataset_config(dataset_class: Type):
     run_id = uuid4().hex
     bucket = f"bucket_{uuid4().hex}"
     ds = dataset_class(bucket, "unit_tests_dataset", run_id)
