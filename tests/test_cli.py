@@ -13,6 +13,7 @@ from kedro_sagemaker import cli
 from kedro_sagemaker.config import KedroSageMakerPluginConfig
 from kedro_sagemaker.constants import (
     KEDRO_SAGEMAKER_ARGS,
+    KEDRO_SAGEMAKER_DEBUG,
     KEDRO_SAGEMAKER_PARAM_KEY_PREFIX,
     KEDRO_SAGEMAKER_PARAM_VALUE_PREFIX,
     KEDRO_SAGEMAKER_WORKING_DIRECTORY,
@@ -180,9 +181,10 @@ def test_can_run_the_pipeline(
             started_pipeline.wait.assert_not_called()
 
 
+@pytest.mark.parametrize("kedro_sagemaker_debug", ("0", "1"))
 @patch("subprocess.run", return_value=Mock(returncode=0))
 def test_sagemaker_entrypoint_can_be_called_with_any_cli_args(
-    subprocess_run, tmp_path: Path
+    subprocess_run, tmp_path: Path, kedro_sagemaker_debug: str
 ):
     runner = CliRunner()
     cmd = "echo 'Unit tests'"
@@ -191,6 +193,7 @@ def test_sagemaker_entrypoint_can_be_called_with_any_cli_args(
         {
             KEDRO_SAGEMAKER_ARGS: cmd,
             KEDRO_SAGEMAKER_WORKING_DIRECTORY: str(tmp_path.absolute()),
+            KEDRO_SAGEMAKER_DEBUG: kedro_sagemaker_debug,
         },
     ):
         result = runner.invoke(

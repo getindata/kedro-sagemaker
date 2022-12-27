@@ -291,7 +291,7 @@ def compile(
 )
 @click.pass_obj
 @click.pass_context
-def entrypoint(click_context: click.Context, ctx: CliContext, *args, **kwargs):
+def entrypoint(click_context: click.Context, ctx: CliContext, *other_args, **kwargs):
     """
     Internal entrypoint only for use with Kedro SageMaker plugin
     """
