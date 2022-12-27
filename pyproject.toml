@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "kedro-sagemaker"
-version = "0.0.1"
+version = "0.1.0"
 description = "Kedro plugin with AWS SageMaker Pipelines support"
 readme = "README.md"
 authors = ['Marcin Zabłocki <marcin.zablocki@getindata.com>']
@@ -13,6 +13,15 @@ license = "Apache-2.0"
 classifiers = [
     "Development Status :: 4 - Beta", # license and python versions added automatically
 ]
+[tool.poetry.group.dev.dependencies]
+pytest = "<7"
+pytest-cov = ">=2.8.0,<4.0.0"
+tox = ">=3.25.1,<4.0.0"
+numpy = "^1.23.5"
+pandas = "^1.5.2"
+pre-commit = "^2.20.0"
+recommonmark = "^0.7.1"
+
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -33,10 +42,16 @@ known_third_party = ["pydantic","semver","setuptools"]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
+kedro = ">=0.18.3,<0.19"
+sagemaker = "^2.117.0"
+zstandard = ">=0.19.0,<0.20.0"
+s3fs = "^2022.11.0"
+backoff = "^2.2.1"
+pydantic = "^1.10.2"
+cloudpickle = "^2.2.0"
+tarsafe = "0.0.4"
 
-[tool.poetry.dev-dependencies]
-pytest = "<7"
-pytest-cov = ">=2.8.0, <4.0.0"
-tox = ">=3.25.1"
-pre-commit = "2.20.0"
+[tool.poetry.plugins] # Optional super table
 
+[tool.poetry.plugins."kedro.project_commands"]
+"sagemaker" = "kedro_sagemaker.cli:commands"

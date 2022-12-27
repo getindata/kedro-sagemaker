@@ -1,16 +1,111 @@
-name: Publish
+name: Test
 
 on:
   push:
+    branches: 
+      - master
+      - develop
+    paths-ignore:
+      - "docs/**"
+  pull_request:
     branches:
       - master
+      - develop
+    paths-ignore:
+      - "docs/**"
 
 jobs:
-  deploy:
+  unit_tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.8]
+        python-version: [ '3.8', '3.9', '3.10']
+
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Setup python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2.2.1
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Setup poetry
+      run: |
+        python -V
+        python -m pip install poetry
+
+    - name: Check pre-commit status
+      run: |
+        poetry install -v
+        poetry run pre-commit run --all-files
+
+    - name: Test with tox
+      env:
+        AWS_DEFAULT_REGION: eu-central-1
+      run: |
+        pip install tox-pip-version tox-gh-actions "tox<4.0.0"
+        tox -v
+
+    - name: Store coverage reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-${{ matrix.python-version }}
+        path: coverage.xml
+        if-no-files-found: error
+
+  sonarcloud:
+    runs-on: ubuntu-latest
+    needs: unit_tests
+    steps:
+
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - uses: actions/download-artifact@v3
+      with:
+        name: coverage-3.9
+        path: .
+
+    - name: SonarCloud Scan
+      uses: sonarsource/sonarcloud-github-action@master
+      with:
+        projectBaseDir: ${{ github.workspace }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
+
+  codeql:
+    runs-on: ubuntu-latest
+    needs: unit_tests
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Initializes the CodeQL tools for scanning.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: python
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+  publish:
+    if: github.event.pull_request == null && github.ref == 'refs/heads/master'
+    needs: [ codeql, sonarcloud ]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ 3.8 ]
     env:
       PYTHON_PACKAGE: kedro_sagemaker
     steps:
@@ -26,7 +121,7 @@ jobs:
         run: |
           pip install poetry
           poetry build
-      - name:  Merge back to develop  # we have to set the config first on a fresh machine
+      - name: Merge back to develop  # we have to set the config first on a fresh machine
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com

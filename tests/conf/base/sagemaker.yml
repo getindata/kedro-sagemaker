@@ -1,0 +1,14 @@
+aws:
+  bucket: "unit-tests-bucket"
+  execution_role: "arn::unit/tests/role/arn"
+  resources:
+    __default__:
+      instance_count: 1
+      instance_type: ml.m5.large
+      timeout_seconds: 86400
+  sagemaker:
+    pipeline_names_mapping:
+      kedro_pipeline_name: "sagemaker-pipeline-name"
+docker:
+  image: "docker:image"
+  working_directory: /home/kedro
