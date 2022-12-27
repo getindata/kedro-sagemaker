@@ -71,7 +71,7 @@ def sagemaker_group(ctx, metadata: ProjectMetadata, env):
 @click.pass_obj
 def init(ctx: CliContext, bucket, execution_role, docker_image, yes: bool):
     """
-    Creates basic configuration for Kedro AzureML plugin
+    Creates basic configuration for Kedro SageMaker plugin
     """
     cwd = Path.cwd()
     target_path = cwd.joinpath("conf/base/sagemaker.yml")
