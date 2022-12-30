@@ -262,6 +262,8 @@ class KedroSageMakerGenerator:
         cmd = [
             "kedro",
             "sagemaker",
+            "-e",
+            self.kedro_context.env or "local",
             "execute",
             f"--pipeline={self.pipeline_name}",
             f"--node={node.name}",

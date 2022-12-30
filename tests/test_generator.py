@@ -1,5 +1,6 @@
 import json
 from unittest.mock import patch
+from uuid import uuid4
 
 from kedro.io import DataCatalog
 from kedro.pipeline import node, pipeline
@@ -119,6 +120,7 @@ def test_should_process_kedro_parameters(context_mock):
 def test_should_create_processor_based_on_the_config(context_mock):
     # given
     config = _CONFIG_TEMPLATE.copy(deep=True)
+    context_mock.env = (env := uuid4().hex)
     config.aws.execution_role = "__execution_role__"
     config.aws.bucket = "__bucket_name__"
     config.docker.image = "__image_uri__"
@@ -135,6 +137,8 @@ def test_should_create_processor_based_on_the_config(context_mock):
     assert processor.entrypoint == [
         "kedro",
         "sagemaker",
+        "-e",
+        env,
         "execute",
         "--pipeline=__default__",
         "--node=node1",
@@ -184,6 +188,7 @@ def test_should_generate_training_steps_and_register_model(
     config = _CONFIG_TEMPLATE.copy(deep=True)
     config.docker.image = "__image_uri__"
     context_mock.catalog = DataCatalog({"i2": SageMakerModelDataset()})
+    context_mock.env = uuid4().hex
     generator = KedroSageMakerGenerator(
         "__default__", context_mock, config, is_local=False
     )
@@ -212,6 +217,7 @@ def test_should_generate_training_steps_and_skip_model_registration(
     # given
     config = _CONFIG_TEMPLATE.copy(deep=True)
     context_mock.catalog = DataCatalog({"i2": SageMakerModelDataset()})
+    context_mock.env = uuid4().hex
     generator = KedroSageMakerGenerator(
         "__default__", context_mock, config, is_local=True
     )
@@ -241,6 +247,7 @@ def test_should_create_estimator_based_on_the_config(
         instance_type="__instance_type__", instance_count=42, timeout_seconds=4242
     )
     context_mock.catalog = DataCatalog({"i2": SageMakerModelDataset()})
+    context_mock.env = (env := uuid4().hex)
     generator = KedroSageMakerGenerator("__default__", context_mock, config)
 
     # when
@@ -257,7 +264,7 @@ def test_should_create_estimator_based_on_the_config(
     assert len(estimator.metric_definitions) == 0
     assert (
         estimator.environment["KEDRO_SAGEMAKER_ARGS"]
-        == "kedro sagemaker execute --pipeline=__default__ --node=node1"
+        == f"kedro sagemaker -e {env} execute --pipeline=__default__ --node=node1"
     )
     assert estimator.environment["KEDRO_SAGEMAKER_WD"] == "/home/kedro"
     assert (
@@ -273,6 +280,7 @@ def test_should_create_estimator_based_on_the_config(
 @patch("kedro.framework.context.KedroContext")
 def test_should_mark_node_as_estimator_if_it_exposes_metrics(context_mock):
     # given
+    context_mock.env = uuid4().hex
     config = _CONFIG_TEMPLATE.copy(deep=True)
     generator = KedroSageMakerGenerator("__default__", context_mock, config)
 

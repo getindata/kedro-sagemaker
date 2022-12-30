@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+-   Pass missing environment to the internal entrypoint
+-   Add lazy initialization and cache to Kedro's context in the `KedroContextManager` class to prevent re-loading
 
 ## [0.1.0] - 2022-12-27
 
