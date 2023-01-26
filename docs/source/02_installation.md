@@ -10,7 +10,7 @@
 First, you need to install base Kedro package
 
 ```console
-$ pip install ">=0.18.3,<0.19"
+$ pip install "kedro>=0.18.3,<0.19"
 ```
 
 ## Plugin installation
