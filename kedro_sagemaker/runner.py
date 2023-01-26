@@ -36,6 +36,7 @@ class SageMakerPipelinesRunner(SequentialRunner):
         self.runner_config = KedroSageMakerRunnerConfig.parse_raw(
             self.runner_config_raw
         )
+        self.run_id = os.getenv(KEDRO_SAGEMAKER_EXECUTION_ARN, "local").split(":")[-1]
 
     def run(
         self,
@@ -62,5 +63,5 @@ class SageMakerPipelinesRunner(SequentialRunner):
         return dataset_cls(
             bucket=self.runner_config.bucket,
             dataset_name=ds_name,
-            run_id=os.environ[KEDRO_SAGEMAKER_EXECUTION_ARN].split(":")[-1],
+            run_id=self.run_id,
         )

@@ -152,7 +152,6 @@ def test_should_create_processor_based_on_the_config(context_mock):
         json.loads(processor.env["KEDRO_SAGEMAKER_RUNNER_CONFIG"])["bucket"]
         == "__bucket_name__"
     )
-    assert "run_id" in json.loads(processor.env["KEDRO_SAGEMAKER_RUNNER_CONFIG"])
 
 
 @patch("kedro.framework.project.pipelines", {"__default__": sample_pipeline})
@@ -270,9 +269,6 @@ def test_should_create_estimator_based_on_the_config(
     assert (
         json.loads(estimator.environment["KEDRO_SAGEMAKER_RUNNER_CONFIG"])["bucket"]
         == "__bucket_name__"
-    )
-    assert "run_id" in json.loads(
-        estimator.environment["KEDRO_SAGEMAKER_RUNNER_CONFIG"]
     )
 
 
