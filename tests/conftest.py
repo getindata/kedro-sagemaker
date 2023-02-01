@@ -95,3 +95,9 @@ def dummy_pipeline() -> Pipeline:
             node(identity, inputs="i3", outputs="output_data", name="node3"),
         ]
     )
+
+
+@pytest.fixture()
+def no_mlflow():
+    with patch.dict("sys.modules", {"mlflow": None}):
+        yield

@@ -21,6 +21,7 @@ numpy = "^1.23.5"
 pandas = "^1.5.2"
 pre-commit = "^2.20.0"
 recommonmark = "^0.7.1"
+kedro-mlflow = "~0.11.6"
 
 
 [build-system]

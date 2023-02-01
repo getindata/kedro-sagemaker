@@ -23,7 +23,7 @@ sample_pipeline = pipeline(
 
 @patch("kedro.framework.project.pipelines", {"__default__": sample_pipeline})
 @patch("kedro.framework.context.KedroContext")
-def test_should_generate_pipeline_with_processing_steps(context_mock):
+def test_should_generate_pipeline_with_processing_steps(context_mock, no_mlflow):
     # given
     config = _CONFIG_TEMPLATE.copy(deep=True)
     generator = KedroSageMakerGenerator(
@@ -181,7 +181,7 @@ def test_should_use_default_resources_spec_in_processing_step(context_mock):
 @patch("kedro_sagemaker.generator.Model")
 @patch("kedro_sagemaker.generator.ModelStep")
 def test_should_generate_training_steps_and_register_model(
-    model_step_mock, model_mock, context_mock
+    model_step_mock, model_mock, context_mock, no_mlflow
 ):
     # given
     config = _CONFIG_TEMPLATE.copy(deep=True)
@@ -211,7 +211,7 @@ def test_should_generate_training_steps_and_register_model(
 @patch("kedro_sagemaker.generator.Model")
 @patch("kedro_sagemaker.generator.ModelStep")
 def test_should_generate_training_steps_and_skip_model_registration(
-    model_step_mock, model_mock, context_mock
+    model_step_mock, model_mock, context_mock, no_mlflow
 ):
     # given
     config = _CONFIG_TEMPLATE.copy(deep=True)
@@ -235,7 +235,7 @@ def test_should_generate_training_steps_and_skip_model_registration(
 @patch("kedro_sagemaker.generator.Model")
 @patch("kedro_sagemaker.generator.ModelStep")
 def test_should_create_estimator_based_on_the_config(
-    model_step_mock, model_mock, context_mock
+    model_step_mock, model_mock, context_mock, no_mlflow
 ):
     # given
     config = _CONFIG_TEMPLATE.copy(deep=True)
@@ -274,7 +274,7 @@ def test_should_create_estimator_based_on_the_config(
 
 @patch("kedro.framework.project.pipelines", {"__default__": sample_pipeline})
 @patch("kedro.framework.context.KedroContext")
-def test_should_mark_node_as_estimator_if_it_exposes_metrics(context_mock):
+def test_should_mark_node_as_estimator_if_it_exposes_metrics(context_mock, no_mlflow):
     # given
     context_mock.env = uuid4().hex
     config = _CONFIG_TEMPLATE.copy(deep=True)

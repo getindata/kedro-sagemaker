@@ -241,12 +241,13 @@ def test_no_mlflow_run_id_injected_if_mlflow_support_not_enabled(
     sagemaker_pipelines_runner,
     cli_context,
     patched_kedro_package,
+    no_mlflow,
 ):
     runner = CliRunner()
     with patch.dict(
         os.environ,
         {KEDRO_SAGEMAKER_EXECUTION_ARN: "execution-arn"},
-    ), patch.dict("sys.modules", {"mlflow": None}):
+    ):
 
         result = runner.invoke(
             cli.execute, ["-n", "node"], obj=cli_context, catch_exceptions=False
