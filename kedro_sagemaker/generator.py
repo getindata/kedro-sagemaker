@@ -56,7 +56,7 @@ class KedroSageMakerGenerator:
         execution_role_arn: Optional[str] = None,
     ):
         self.is_local = is_local
-        self.docker_image = docker_image
+        self.docker_image = docker_image or config.docker.image
         self.config = config
         self.kedro_context = kedro_context
         self.pipeline_name = pipeline_name
@@ -276,7 +276,7 @@ class KedroSageMakerGenerator:
             processor=Processor(
                 entrypoint=entrypoint or self._get_kedro_command(node),
                 role=self._execution_role,
-                image_uri=self.config.docker.image,
+                image_uri=self.docker_image,
                 instance_count=node_resources.instance_count,
                 instance_type=node_resources.instance_type,
                 max_runtime_in_seconds=node_resources.timeout_seconds,
@@ -316,7 +316,7 @@ class KedroSageMakerGenerator:
     ) -> Union[Tuple[ModelStep], Tuple[ModelStep, ModelStep]]:
         model_output_name = sagemaker_model_outputs[0].replace(".", "__")
         model = Model(
-            image_uri=self.config.docker.image,
+            image_uri=self.docker_image,
             model_data=step.properties.ModelArtifacts.S3ModelArtifacts,
             role=self._execution_role,
             name=model_output_name,
@@ -336,7 +336,7 @@ class KedroSageMakerGenerator:
                 response_types=["application/json"],
                 domain="MACHINE_LEARNING",
                 task="OTHER",
-                image_uri=self.config.docker.image,
+                image_uri=self.docker_image,
             )
 
             # TODO - maybe model metrics from https://docs.aws.amazon.com/sagemaker/latest/dg/define-pipeline.html ?
@@ -368,7 +368,7 @@ class KedroSageMakerGenerator:
         return TrainingStep(
             sm_node_name,
             estimator=Estimator(
-                image_uri=self.config.docker.image,
+                image_uri=self.docker_image,
                 role=self._execution_role,
                 instance_count=node_resources.instance_count,
                 instance_type=node_resources.instance_type,

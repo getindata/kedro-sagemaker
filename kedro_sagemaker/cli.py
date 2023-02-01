@@ -200,9 +200,11 @@ def run(
         )
 
         is_ok = client.run(
-            local,
-            wait_for_completion,
-            lambda p: click.echo(f"Pipeline ARN: {p.describe()['PipelineArn']}"),
+            is_local=local,
+            wait_for_completion=wait_for_completion,
+            on_pipeline_started=lambda p: click.echo(
+                f"Pipeline ARN: {p.describe()['PipelineArn']}"
+            ),
         )
 
         if is_ok:
