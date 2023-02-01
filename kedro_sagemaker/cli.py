@@ -24,7 +24,7 @@ from kedro_sagemaker.constants import (
     KEDRO_SAGEMAKER_EXECUTION_ARN,
     KEDRO_SAGEMAKER_S3_TEMP_DIR_NAME,
     KEDRO_SAGEMAKER_WORKING_DIRECTORY,
-    MLFLOW_EXECUTION_ARN_PARAM,
+    MLFLOW_TAG_EXECUTION_ARN,
 )
 from kedro_sagemaker.docker import DOCKERFILE_TEMPLATE, DOCKERIGNORE_TEMPLATE
 from kedro_sagemaker.runner import SageMakerPipelinesRunner
@@ -374,7 +374,5 @@ def mlflow_start(ctx: CliContext):
         ).experiment_id,
         nested=False,
     )
-    mlflow.set_tag(
-        MLFLOW_EXECUTION_ARN_PARAM, os.environ[KEDRO_SAGEMAKER_EXECUTION_ARN]
-    )
+    mlflow.set_tag(MLFLOW_TAG_EXECUTION_ARN, os.environ[KEDRO_SAGEMAKER_EXECUTION_ARN])
     click.echo(f"Started run: {run.info.run_id}")

@@ -7,7 +7,7 @@ from typing import Callable, Iterator, Optional, Tuple
 import click
 from sagemaker.workflow.pipeline import Pipeline as SageMakerPipeline
 
-from kedro_sagemaker.constants import MLFLOW_EXECUTION_ARN_PARAM
+from kedro_sagemaker.constants import MLFLOW_TAG_EXECUTION_ARN
 from kedro_sagemaker.generator import KedroSageMakerGenerator
 from kedro_sagemaker.utils import (
     CliContext,
@@ -105,7 +105,7 @@ def lookup_mlflow_run_id(context, sagemaker_execution_arn: str):
     mlflow_conf: KedroMlflowConfig = context.mlflow
     mlflow_run = mlflow.search_runs(
         experiment_names=[mlflow_conf.tracking.experiment.name],
-        filter_string=f'tags.`{MLFLOW_EXECUTION_ARN_PARAM}` = "{sagemaker_execution_arn}"',
+        filter_string=f'tags.`{MLFLOW_TAG_EXECUTION_ARN}` = "{sagemaker_execution_arn}"',
         max_results=1,
         output_format="list",
     )[0]

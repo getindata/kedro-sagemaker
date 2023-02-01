@@ -14,9 +14,11 @@ from kedro_sagemaker.config import KedroSageMakerPluginConfig
 from kedro_sagemaker.constants import (
     KEDRO_SAGEMAKER_ARGS,
     KEDRO_SAGEMAKER_DEBUG,
+    KEDRO_SAGEMAKER_EXECUTION_ARN,
     KEDRO_SAGEMAKER_PARAM_KEY_PREFIX,
     KEDRO_SAGEMAKER_PARAM_VALUE_PREFIX,
     KEDRO_SAGEMAKER_WORKING_DIRECTORY,
+    MLFLOW_TAG_EXECUTION_ARN,
 )
 from kedro_sagemaker.generator import KedroSageMakerGenerator
 from tests.utils import assert_has_any_call_with_args
@@ -179,6 +181,31 @@ def test_can_run_the_pipeline(
             started_pipeline.wait.assert_called_once()
         else:
             started_pipeline.wait.assert_not_called()
+
+
+@patch("mlflow.start_run")
+@patch("mlflow.set_tag")
+@patch("mlflow.get_experiment_by_name")
+def test_mlflow_start(
+    mlflow_get_experiment_by_name,
+    mlflow_set_tag,
+    mlflow_start_run,
+    cli_context,
+    patched_kedro_package,
+):
+    mlflow_get_experiment_by_name.return_value.experiment_id = 42
+    runner = CliRunner()
+    with patch.dict(
+        os.environ,
+        {KEDRO_SAGEMAKER_EXECUTION_ARN: "execution-arn"},
+    ):
+        result = runner.invoke(
+            cli.mlflow_start, obj=cli_context, catch_exceptions=False
+        )
+        assert result.exit_code == 0
+
+    mlflow_start_run.assert_called_with(experiment_id=42, nested=False)
+    mlflow_set_tag.assert_called_with(MLFLOW_TAG_EXECUTION_ARN, "execution-arn")
 
 
 @pytest.mark.parametrize("kedro_sagemaker_debug", ("0", "1"))
