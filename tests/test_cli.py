@@ -208,6 +208,55 @@ def test_mlflow_start(
     mlflow_set_tag.assert_called_with(MLFLOW_TAG_EXECUTION_ARN, "execution-arn")
 
 
+@patch("kedro_sagemaker.cli.SageMakerPipelinesRunner")
+@patch("mlflow.search_runs")
+@patch("kedro_sagemaker.utils.KedroSession.run")
+def test_mlflow_run_id_injection_in_execute(
+    kedro_session_run,
+    mlflow_search_runs,
+    sagemaker_pipelines_runner,
+    cli_context,
+    patched_kedro_package,
+):
+    runner = CliRunner()
+    mlflow_search_runs.return_value = [MagicMock(info=MagicMock(run_id="abcdef"))]
+    with patch.dict(
+        os.environ,
+        {KEDRO_SAGEMAKER_EXECUTION_ARN: "execution-arn"},
+    ):
+
+        result = runner.invoke(
+            cli.execute, ["-n", "node"], obj=cli_context, catch_exceptions=False
+        )
+        assert result.exit_code == 0
+        assert os.environ["MLFLOW_RUN_ID"] == "abcdef"
+
+    assert kedro_session_run.called_with("__default__", node_names=["node"])
+
+
+@patch("kedro_sagemaker.cli.SageMakerPipelinesRunner")
+@patch("kedro_sagemaker.utils.KedroSession.run")
+def test_no_mlflow_run_id_injected_if_mlflow_support_not_enabled(
+    kedro_session_run,
+    sagemaker_pipelines_runner,
+    cli_context,
+    patched_kedro_package,
+):
+    runner = CliRunner()
+    with patch.dict(
+        os.environ,
+        {KEDRO_SAGEMAKER_EXECUTION_ARN: "execution-arn"},
+    ), patch.dict("sys.modules", {"mlflow": None}):
+
+        result = runner.invoke(
+            cli.execute, ["-n", "node"], obj=cli_context, catch_exceptions=False
+        )
+        assert result.exit_code == 0
+        assert "MLFLOW_RUN_ID" not in os.environ
+
+    assert kedro_session_run.called_with("__default__", node_names=["node"])
+
+
 @pytest.mark.parametrize("kedro_sagemaker_debug", ("0", "1"))
 @patch("subprocess.run", return_value=Mock(returncode=0))
 def test_sagemaker_entrypoint_can_be_called_with_any_cli_args(
