@@ -5,6 +5,7 @@ from uuid import uuid4
 from kedro.io import DataCatalog
 from kedro.pipeline import node, pipeline
 from sagemaker.workflow import pipeline_context
+from sagemaker.workflow.execution_variables import ExecutionVariables
 from sagemaker.workflow.steps import StepTypeEnum
 
 from kedro_sagemaker.config import _CONFIG_TEMPLATE, ResourceConfig
@@ -152,6 +153,10 @@ def test_should_create_processor_based_on_the_config(context_mock):
         json.loads(processor.env["KEDRO_SAGEMAKER_RUNNER_CONFIG"])["bucket"]
         == "__bucket_name__"
     )
+    assert (
+        processor.env["KEDRO_SAGEMAKER_EXECUTION_ARN"]
+        == ExecutionVariables.PIPELINE_EXECUTION_ARN
+    )
 
 
 @patch("kedro.framework.project.pipelines", {"__default__": sample_pipeline})
@@ -204,6 +209,39 @@ def test_should_generate_training_steps_and_register_model(
     assert model_properties["image_uri"] == "__image_uri__"
     assert model_step_mock.call_args_list[0].args[0] == "CreateModel0"
     assert model_step_mock.call_args_list[1].args[0] == "RegisterModel0"
+
+
+@patch("kedro.framework.project.pipelines", {"__default__": sample_pipeline})
+@patch("kedro.framework.context.KedroContext")
+@patch("kedro_sagemaker.generator.Model")
+@patch("kedro_sagemaker.generator.ModelStep")
+def test_should_generate_training_steps_and_register_model_with_mlflow(
+    model_step_mock, model_mock, context_mock
+):
+    # given
+    config = _CONFIG_TEMPLATE.copy(deep=True)
+    config.docker.image = "__image_uri__"
+    context_mock.catalog = DataCatalog({"i2": SageMakerModelDataset()})
+    context_mock.env = "base"
+    generator = KedroSageMakerGenerator(
+        "__default__", context_mock, config, is_local=False
+    )
+
+    # when
+    pipeline = generator.generate()
+
+    # then
+    steps = {step.name: step for step in pipeline.steps}
+    assert len(steps) == 4
+    assert "start-mlflow-run" in steps
+    assert steps["start-mlflow-run"].processor.entrypoint == [
+        "kedro",
+        "sagemaker",
+        "-e",
+        "base",
+        "mlflow-start",
+    ]
+    assert steps["node1"].depends_on[0].name == "start-mlflow-run"
 
 
 @patch("kedro.framework.project.pipelines", {"__default__": sample_pipeline})
@@ -266,6 +304,10 @@ def test_should_create_estimator_based_on_the_config(
         == f"kedro sagemaker -e {env} execute --pipeline=__default__ --node=node1"
     )
     assert estimator.environment["KEDRO_SAGEMAKER_WD"] == "/home/kedro"
+    assert (
+        estimator.environment["KEDRO_SAGEMAKER_EXECUTION_ARN"]
+        == ExecutionVariables.PIPELINE_EXECUTION_ARN
+    )
     assert (
         json.loads(estimator.environment["KEDRO_SAGEMAKER_RUNNER_CONFIG"])["bucket"]
         == "__bucket_name__"

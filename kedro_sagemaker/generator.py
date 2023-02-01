@@ -22,7 +22,7 @@ from sagemaker.workflow.pipeline_context import (
     LocalPipelineSession,
     PipelineSession,
 )
-from sagemaker.workflow.steps import ProcessingStep, TrainingStep
+from sagemaker.workflow.steps import ProcessingStep, StepTypeEnum, TrainingStep
 
 from kedro_sagemaker.config import (
     KedroSageMakerPluginConfig,
@@ -245,7 +245,7 @@ class KedroSageMakerGenerator:
         for step in steps.values():
             if step.depends_on is not None:
                 continue
-            if isinstance(step, ModelStep):
+            if step.step_type not in (StepTypeEnum.TRAINING, StepTypeEnum.PROCESSING):
                 continue
 
             step.add_depends_on([mlflow_start_run])
