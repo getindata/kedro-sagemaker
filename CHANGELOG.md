@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+-   Support for Mlflow with shared run across pipeline steps
+-   Fixed ability to overwrite docker image in `kedro sagemaker run`
+
 ## [0.1.1] - 2022-12-30
 
 -   Pass missing environment to the internal entrypoint
