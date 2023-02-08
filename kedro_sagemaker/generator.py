@@ -1,7 +1,7 @@
 import json
 from itertools import chain
+from types import SimpleNamespace
 from typing import Dict, Iterator, List, Optional, Tuple, Union
-from uuid import uuid4
 
 from kedro.framework.context import KedroContext
 from kedro.io import DataCatalog
@@ -9,6 +9,7 @@ from kedro.pipeline import Pipeline as KedroPipeline
 from kedro.pipeline.node import Node as KedroNode
 from sagemaker import Model, Processor
 from sagemaker.estimator import Estimator
+from sagemaker.workflow.execution_variables import ExecutionVariables
 from sagemaker.workflow.model_step import ModelStep
 from sagemaker.workflow.parameters import (
     ParameterBoolean,
@@ -21,7 +22,7 @@ from sagemaker.workflow.pipeline_context import (
     LocalPipelineSession,
     PipelineSession,
 )
-from sagemaker.workflow.steps import ProcessingStep, TrainingStep
+from sagemaker.workflow.steps import ProcessingStep, StepTypeEnum, TrainingStep
 
 from kedro_sagemaker.config import (
     KedroSageMakerPluginConfig,
@@ -30,6 +31,7 @@ from kedro_sagemaker.config import (
 )
 from kedro_sagemaker.constants import (
     KEDRO_SAGEMAKER_ARGS,
+    KEDRO_SAGEMAKER_EXECUTION_ARN,
     KEDRO_SAGEMAKER_METRICS,
     KEDRO_SAGEMAKER_PARAM_KEY_PREFIX,
     KEDRO_SAGEMAKER_PARAM_VALUE_PREFIX,
@@ -38,7 +40,7 @@ from kedro_sagemaker.constants import (
 )
 from kedro_sagemaker.datasets import SageMakerModelDataset
 from kedro_sagemaker.runner import KedroSageMakerRunnerConfig
-from kedro_sagemaker.utils import flatten_dict
+from kedro_sagemaker.utils import flatten_dict, is_mlflow_enabled
 
 SageMakerStepType = Union[ProcessingStep, TrainingStep, ModelStep]
 
@@ -54,7 +56,7 @@ class KedroSageMakerGenerator:
         execution_role_arn: Optional[str] = None,
     ):
         self.is_local = is_local
-        self.docker_image = docker_image
+        self.docker_image = docker_image or config.docker.image
         self.config = config
         self.kedro_context = kedro_context
         self.pipeline_name = pipeline_name
@@ -142,10 +144,7 @@ class KedroSageMakerGenerator:
             return defaults
 
     def generate(self) -> SageMakerPipeline:
-        run_id = uuid4().hex
-        runner_config = KedroSageMakerRunnerConfig(
-            bucket=self.config.aws.bucket, run_id=run_id
-        )
+        runner_config = KedroSageMakerRunnerConfig(bucket=self.config.aws.bucket)
 
         sagemaker_session = (
             LocalPipelineSession() if self.is_local else PipelineSession()
@@ -216,7 +215,9 @@ class KedroSageMakerGenerator:
                 )
             steps[node.name] = step
 
-        steps = self._add_step_dependencies(pipeline, steps)
+        self._add_step_dependencies(pipeline, steps)
+        if is_mlflow_enabled():
+            self._add_mlflow_support(steps, runner_config)
 
         smp = SageMakerPipeline(
             self._get_sagemaker_pipeline_name(),
@@ -225,6 +226,31 @@ class KedroSageMakerGenerator:
             parameters=sm_params,
         )
         return smp
+
+    def _add_mlflow_support(self, steps, runner_config):
+        mlflow_start_run = self._create_processing_step(
+            node=SimpleNamespace(name="start-mlflow-run"),
+            node_resources=ResourceConfig(instance_type="ml.t3.medium"),
+            runner_config=runner_config,
+            sm_node_name="start-mlflow-run",
+            sm_param_envs={},
+            entrypoint=[
+                "kedro",
+                "sagemaker",
+                "-e",
+                self.kedro_context.env or "local",
+                "mlflow-start",
+            ],
+        )
+        for step in steps.values():
+            if step.depends_on is not None:
+                continue
+            if step.step_type not in (StepTypeEnum.TRAINING, StepTypeEnum.PROCESSING):
+                continue
+
+            step.add_depends_on([mlflow_start_run])
+
+        steps["start-mlflow-run"] = mlflow_start_run
 
     def _add_step_dependencies(
         self, pipeline, steps: Dict[str, SageMakerStepType]
@@ -237,19 +263,26 @@ class KedroSageMakerGenerator:
         return steps
 
     def _create_processing_step(
-        self, node, node_resources, runner_config, sm_node_name, sm_param_envs
+        self,
+        node,
+        node_resources,
+        runner_config,
+        sm_node_name,
+        sm_param_envs,
+        entrypoint=None,
     ):
         step = ProcessingStep(
             sm_node_name,
             processor=Processor(
-                entrypoint=self._get_kedro_command(node),
+                entrypoint=entrypoint or self._get_kedro_command(node),
                 role=self._execution_role,
-                image_uri=self.config.docker.image,
+                image_uri=self.docker_image,
                 instance_count=node_resources.instance_count,
                 instance_type=node_resources.instance_type,
                 max_runtime_in_seconds=node_resources.timeout_seconds,
                 env={
                     KEDRO_SAGEMAKER_RUNNER_CONFIG: runner_config.json(),
+                    KEDRO_SAGEMAKER_EXECUTION_ARN: ExecutionVariables.PIPELINE_EXECUTION_ARN,
                     **sm_param_envs,
                 },
             ),
@@ -283,7 +316,7 @@ class KedroSageMakerGenerator:
     ) -> Union[Tuple[ModelStep], Tuple[ModelStep, ModelStep]]:
         model_output_name = sagemaker_model_outputs[0].replace(".", "__")
         model = Model(
-            image_uri=self.config.docker.image,
+            image_uri=self.docker_image,
             model_data=step.properties.ModelArtifacts.S3ModelArtifacts,
             role=self._execution_role,
             name=model_output_name,
@@ -303,7 +336,7 @@ class KedroSageMakerGenerator:
                 response_types=["application/json"],
                 domain="MACHINE_LEARNING",
                 task="OTHER",
-                image_uri=self.config.docker.image,
+                image_uri=self.docker_image,
             )
 
             # TODO - maybe model metrics from https://docs.aws.amazon.com/sagemaker/latest/dg/define-pipeline.html ?
@@ -335,7 +368,7 @@ class KedroSageMakerGenerator:
         return TrainingStep(
             sm_node_name,
             estimator=Estimator(
-                image_uri=self.config.docker.image,
+                image_uri=self.docker_image,
                 role=self._execution_role,
                 instance_count=node_resources.instance_count,
                 instance_type=node_resources.instance_type,
@@ -348,6 +381,7 @@ class KedroSageMakerGenerator:
                     KEDRO_SAGEMAKER_ARGS: self._get_kedro_command(node, as_string=True),
                     KEDRO_SAGEMAKER_RUNNER_CONFIG: runner_config.json(),
                     KEDRO_SAGEMAKER_WORKING_DIRECTORY: self.config.docker.working_directory,
+                    KEDRO_SAGEMAKER_EXECUTION_ARN: ExecutionVariables.PIPELINE_EXECUTION_ARN,
                     # "PYTHONPATH": "/home/kedro/src",
                     # # TODO - this will not be needed if plugin is installed, I hope :D,
                     **sm_param_envs,

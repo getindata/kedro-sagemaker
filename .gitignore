@@ -164,13 +164,5 @@ credentials.json
 /mlruns/
 /ga4/
 
-# terraform
-terraform/terraform.tfstate.backup
-terraform/.terraform.lock.hcl
-terraform/.terraform/providers/registry.terraform.io/hashicorp/google-beta/4.21.0/darwin_amd64/terraform-provider-google-beta_v4.21.0_x5
-terraform/.terraform/providers/registry.terraform.io/hashicorp/google/4.21.0/darwin_amd64/terraform-provider-google_v4.21.0_x5
-terraform/terraform.tfstate
-
 .idea
-conf/azure/credentials.yml
-
+tests/mlruns

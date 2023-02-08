@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "kedro-sagemaker"
-version = "0.1.1"
+version = "0.2.0"
 description = "Kedro plugin with AWS SageMaker Pipelines support"
 readme = "README.md"
 authors = ['Marcin Zabłocki <marcin.zablocki@getindata.com>']
@@ -21,6 +21,7 @@ numpy = "^1.23.5"
 pandas = "^1.5.2"
 pre-commit = "^2.20.0"
 recommonmark = "^0.7.1"
+kedro-mlflow = "^0.11.6"
 
 
 [build-system]

@@ -1,6 +1,13 @@
+import os
+from unittest.mock import patch
+
 from kedro.io import DataCatalog, MemoryDataSet
 from kedro.pipeline import Pipeline
 
+from kedro_sagemaker.constants import (
+    KEDRO_SAGEMAKER_EXECUTION_ARN,
+    KEDRO_SAGEMAKER_RUNNER_CONFIG,
+)
 from kedro_sagemaker.runner import SageMakerPipelinesRunner
 
 
@@ -32,3 +39,19 @@ def test_runner_fills_missing_datasets(
             catalog,
         )
     assert results["output_data"] == input_data, "Invalid output data"
+
+
+def test_runner_creating_default_datasets_based_on_execution_arn():
+    with patch.dict(
+        os.environ,
+        {
+            KEDRO_SAGEMAKER_EXECUTION_ARN: "execution-arn",
+            KEDRO_SAGEMAKER_RUNNER_CONFIG: '{"bucket": "s3-bucket"}',
+        },
+    ):
+        runner = SageMakerPipelinesRunner()
+        dataset = runner.create_default_data_set("output_data")
+        assert (
+            dataset._get_target_path()
+            == "s3://s3-bucket/kedro-sagemaker-tmp/execution-arn/output_data.bin"
+        )
