@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
@@ -237,6 +238,38 @@ def test_mlflow_run_id_injection_in_execute(
         assert result.exit_code == 0
         assert os.environ["MLFLOW_RUN_ID"] == "abcdef"
 
+    assert kedro_session_run.called_with("__default__", node_names=["node"])
+
+
+@patch("kedro_sagemaker.cli.SageMakerPipelinesRunner")
+@patch("mlflow.search_runs")
+@patch("kedro_sagemaker.utils.KedroSession.run")
+def test_warn_if_unable_to_lookup_mlflow_run_id_in_execute(
+    kedro_session_run,
+    mlflow_search_runs,
+    sagemaker_pipelines_runner,
+    cli_context,
+    patched_kedro_package,
+    caplog,
+):
+    runner = CliRunner()
+    mlflow_search_runs.return_value = []
+    execution_arn = "pipeline/execution/arn"
+    with patch.dict(
+        os.environ,
+        {KEDRO_SAGEMAKER_EXECUTION_ARN: execution_arn},
+    ), caplog.at_level(logging.WARN):
+
+        result = runner.invoke(
+            cli.execute, ["-n", "node"], obj=cli_context, catch_exceptions=False
+        )
+        assert result.exit_code == 0
+        assert "MLFLOW_RUN_ID" not in os.environ
+
+    assert (
+        f"Unable to find parent mlflow run id for the current execution ({execution_arn})"
+        in caplog.text
+    )
     assert kedro_session_run.called_with("__default__", node_names=["node"])
 
 

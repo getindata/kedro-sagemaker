@@ -1,5 +1,6 @@
 import importlib
 import json
+import logging
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Callable, Iterator, Optional, Tuple
@@ -15,6 +16,8 @@ from kedro_sagemaker.utils import (
     docker_build,
     docker_push,
 )
+
+logger = logging.getLogger()
 
 
 def parse_extra_params(params, silent=False):
@@ -103,11 +106,19 @@ def lookup_mlflow_run_id(context, sagemaker_execution_arn: str):
     from kedro_mlflow.config.kedro_mlflow_config import KedroMlflowConfig
 
     mlflow_conf: KedroMlflowConfig = context.mlflow
-    mlflow_run = mlflow.search_runs(
+    mlflow_runs = mlflow.search_runs(
         experiment_names=[mlflow_conf.tracking.experiment.name],
         filter_string=f'tags.`{MLFLOW_TAG_EXECUTION_ARN}` = "{sagemaker_execution_arn}"',
         max_results=1,
         output_format="list",
-    )[0]
+    )
     importlib.reload(mlflow.tracking.request_header.registry)
-    return mlflow.tracking._RUN_ID_ENV_VAR, mlflow_run.info.run_id
+
+    if len(mlflow_runs) == 0:
+        logger.warn(
+            "Unable to find parent mlflow run id for the current execution (%s)",
+            sagemaker_execution_arn,
+        )
+        return mlflow.tracking._RUN_ID_ENV_VAR, None
+
+    return mlflow.tracking._RUN_ID_ENV_VAR, mlflow_runs[0].info.run_id

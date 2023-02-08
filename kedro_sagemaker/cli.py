@@ -351,8 +351,9 @@ def execute(ctx: CliContext, pipeline: str, node: str, params: str):
             env_key, env_value = lookup_mlflow_run_id(
                 mgr.context, os.getenv(KEDRO_SAGEMAKER_EXECUTION_ARN)
             )
-            click.echo(f"Mlflow run id: {env_value}")
-            os.environ[env_key] = env_value
+            if env_value is not None:
+                click.echo(f"Mlflow run id: {env_value}")
+                os.environ[env_key] = env_value
 
         runner = SageMakerPipelinesRunner()
         mgr.session.run(pipeline, node_names=[node], runner=runner)
