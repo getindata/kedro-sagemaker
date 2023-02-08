@@ -8,7 +8,10 @@ from kedro.runner import SequentialRunner
 from pluggy import PluginManager
 from pydantic import BaseModel
 
-from kedro_sagemaker.constants import KEDRO_SAGEMAKER_RUNNER_CONFIG
+from kedro_sagemaker.constants import (
+    KEDRO_SAGEMAKER_EXECUTION_ARN,
+    KEDRO_SAGEMAKER_RUNNER_CONFIG,
+)
 from kedro_sagemaker.datasets import (
     CloudpickleDataset,
     DistributedCloudpickleDataset,
@@ -20,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 class KedroSageMakerRunnerConfig(BaseModel):
     bucket: str
-    run_id: str
 
 
 class SageMakerPipelinesRunner(SequentialRunner):
@@ -34,6 +36,7 @@ class SageMakerPipelinesRunner(SequentialRunner):
         self.runner_config = KedroSageMakerRunnerConfig.parse_raw(
             self.runner_config_raw
         )
+        self.run_id = os.getenv(KEDRO_SAGEMAKER_EXECUTION_ARN, "local").split(":")[-1]
 
     def run(
         self,
@@ -58,7 +61,7 @@ class SageMakerPipelinesRunner(SequentialRunner):
             dataset_cls = DistributedCloudpickleDataset
 
         return dataset_cls(
-            self.runner_config.bucket,
-            ds_name,
-            self.runner_config.run_id,
+            bucket=self.runner_config.bucket,
+            dataset_name=ds_name,
+            run_id=self.run_id,
         )

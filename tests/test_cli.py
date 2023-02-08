@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
@@ -7,16 +8,17 @@ from uuid import uuid4
 import pytest
 import yaml
 from click.testing import CliRunner
-from sagemaker.workflow.pipeline import Pipeline as SageMakerPipeline
 
 from kedro_sagemaker import cli
 from kedro_sagemaker.config import KedroSageMakerPluginConfig
 from kedro_sagemaker.constants import (
     KEDRO_SAGEMAKER_ARGS,
     KEDRO_SAGEMAKER_DEBUG,
+    KEDRO_SAGEMAKER_EXECUTION_ARN,
     KEDRO_SAGEMAKER_PARAM_KEY_PREFIX,
     KEDRO_SAGEMAKER_PARAM_VALUE_PREFIX,
     KEDRO_SAGEMAKER_WORKING_DIRECTORY,
+    MLFLOW_TAG_EXECUTION_ARN,
 )
 from kedro_sagemaker.generator import KedroSageMakerGenerator
 from tests.utils import assert_has_any_call_with_args
@@ -99,7 +101,7 @@ def test_can_compile_the_pipeline(
 
 @patch("click.confirm")
 @patch("subprocess.run", return_value=Mock(returncode=0))
-@patch("kedro_sagemaker.client.SageMakerClient")
+@patch("kedro_sagemaker.cli.SageMakerClient")
 @pytest.mark.parametrize(
     "wait_for_completion", (False, True), ids=("no wait", "wait for completion")
 )
@@ -112,6 +114,14 @@ def test_can_compile_the_pipeline(
     "auto_build", (False, True), ids=("no auto-build", "with auto-build")
 )
 @pytest.mark.parametrize("yes", (False, True), ids=("without --yes", "with --yes"))
+@pytest.mark.parametrize(
+    "image", (None, "custom-image"), ids=("with default image", "with custom image")
+)
+@pytest.mark.parametrize(
+    "execution_role",
+    (None, "arn::yo"),
+    ids=("with default execution role", "with custom execution_role"),
+)
 def test_can_run_the_pipeline(
     sagemaker_client,
     subprocess_run,
@@ -122,20 +132,16 @@ def test_can_run_the_pipeline(
     cli_context,
     dummy_pipeline,
     yes: bool,
+    image: str,
+    execution_role: str,
     tmp_path: Path,
     wait_for_completion: bool,
 ):
-    mock_image = f"docker_image:{uuid4().hex}"
-    started_pipeline = MagicMock()
+    expected_image = image or "docker:image"
+    expected_execution_role = execution_role or "arn::unit/tests/role/arn"
     with patch.object(
         KedroSageMakerGenerator, "get_kedro_pipeline", return_value=dummy_pipeline
-    ), patch.object(SageMakerPipeline, "upsert") as upsert, patch.object(
-        SageMakerPipeline, "start", return_value=started_pipeline
-    ) as start, patch(
-        "sagemaker.model.Model"
-    ), patch(
-        "sagemaker.workflow.model_step.ModelStep"
-    ):
+    ), patch("sagemaker.model.Model"), patch("sagemaker.workflow.model_step.ModelStep"):
         runner = CliRunner()
         result = runner.invoke(
             cli.run,
@@ -143,23 +149,26 @@ def test_can_run_the_pipeline(
             + (["--auto-build"] if auto_build else [])
             + (["--yes"] if yes else [])
             + (["--wait-for-completion"] if wait_for_completion else [])
-            + ["-i", mock_image],
+            + ["-i", image]
+            + ["--execution-role", execution_role],
             obj=cli_context,
             catch_exceptions=False,
         )
 
         assert result.exit_code == 0
-        sagemaker_client.run.asset_called_once()
-        upsert.assert_called_once()
-        start.assert_called_once()
+        sagemaker_client.return_value.run.asset_called_once()
+        sm_pipeline = sagemaker_client.call_args.args[0]
+        execution_role = sagemaker_client.call_args.args[1]
+        assert execution_role == expected_execution_role
+        assert sm_pipeline.steps[0].processor.image_uri == expected_image
 
         assert_docker_build = lambda: assert_has_any_call_with_args(  # noqa: E731
             subprocess_run,
-            ["docker", "build", str(Path.cwd().absolute()), "-t", mock_image],
+            ["docker", "build", str(Path.cwd().absolute()), "-t", expected_image],
         )
 
         assert_docker_push = lambda: assert_has_any_call_with_args(  # noqa: E731
-            subprocess_run, ["docker", "push", mock_image]
+            subprocess_run, ["docker", "push", expected_image]
         )  # noqa: E731
 
         if auto_build:
@@ -175,10 +184,117 @@ def test_can_run_the_pipeline(
             with pytest.raises(AssertionError):
                 assert_docker_push()
 
-        if wait_for_completion:
-            started_pipeline.wait.assert_called_once()
-        else:
-            started_pipeline.wait.assert_not_called()
+        assert (
+            sagemaker_client.return_value.run.call_args.kwargs["wait_for_completion"]
+            == wait_for_completion
+        )
+
+
+@patch("mlflow.start_run")
+@patch("mlflow.set_tag")
+@patch("mlflow.get_experiment_by_name")
+def test_mlflow_start(
+    mlflow_get_experiment_by_name,
+    mlflow_set_tag,
+    mlflow_start_run,
+    cli_context,
+    patched_kedro_package,
+):
+    mlflow_get_experiment_by_name.return_value.experiment_id = 42
+    runner = CliRunner()
+    with patch.dict(
+        os.environ,
+        {KEDRO_SAGEMAKER_EXECUTION_ARN: "execution-arn"},
+    ):
+        result = runner.invoke(
+            cli.mlflow_start, obj=cli_context, catch_exceptions=False
+        )
+        assert result.exit_code == 0
+
+    mlflow_start_run.assert_called_with(experiment_id=42, nested=False)
+    mlflow_set_tag.assert_called_with(MLFLOW_TAG_EXECUTION_ARN, "execution-arn")
+
+
+@patch("kedro_sagemaker.cli.SageMakerPipelinesRunner")
+@patch("mlflow.search_runs")
+@patch("kedro_sagemaker.utils.KedroSession.run")
+def test_mlflow_run_id_injection_in_execute(
+    kedro_session_run,
+    mlflow_search_runs,
+    sagemaker_pipelines_runner,
+    cli_context,
+    patched_kedro_package,
+):
+    runner = CliRunner()
+    mlflow_search_runs.return_value = [MagicMock(info=MagicMock(run_id="abcdef"))]
+    with patch.dict(
+        os.environ,
+        {KEDRO_SAGEMAKER_EXECUTION_ARN: "execution-arn"},
+    ):
+
+        result = runner.invoke(
+            cli.execute, ["-n", "node"], obj=cli_context, catch_exceptions=False
+        )
+        assert result.exit_code == 0
+        assert os.environ["MLFLOW_RUN_ID"] == "abcdef"
+
+    assert kedro_session_run.called_with("__default__", node_names=["node"])
+
+
+@patch("kedro_sagemaker.cli.SageMakerPipelinesRunner")
+@patch("mlflow.search_runs")
+@patch("kedro_sagemaker.utils.KedroSession.run")
+def test_warn_if_unable_to_lookup_mlflow_run_id_in_execute(
+    kedro_session_run,
+    mlflow_search_runs,
+    sagemaker_pipelines_runner,
+    cli_context,
+    patched_kedro_package,
+    caplog,
+):
+    runner = CliRunner()
+    mlflow_search_runs.return_value = []
+    execution_arn = "pipeline/execution/arn"
+    with patch.dict(
+        os.environ,
+        {KEDRO_SAGEMAKER_EXECUTION_ARN: execution_arn},
+    ), caplog.at_level(logging.WARN):
+
+        result = runner.invoke(
+            cli.execute, ["-n", "node"], obj=cli_context, catch_exceptions=False
+        )
+        assert result.exit_code == 0
+        assert "MLFLOW_RUN_ID" not in os.environ
+
+    assert (
+        f"Unable to find parent mlflow run id for the current execution ({execution_arn})"
+        in caplog.text
+    )
+    assert kedro_session_run.called_with("__default__", node_names=["node"])
+
+
+@patch("kedro_sagemaker.cli.SageMakerPipelinesRunner")
+@patch("kedro_sagemaker.utils.KedroSession.run")
+def test_no_mlflow_run_id_injected_if_mlflow_support_not_enabled(
+    kedro_session_run,
+    sagemaker_pipelines_runner,
+    cli_context,
+    patched_kedro_package,
+    no_mlflow,
+):
+    runner = CliRunner()
+    with patch.dict(
+        os.environ,
+        {KEDRO_SAGEMAKER_EXECUTION_ARN: "execution-arn"},
+    ):
+
+        result = runner.invoke(
+            cli.execute, ["-n", "node"], obj=cli_context, catch_exceptions=False
+        )
+        assert result.exit_code == 0
+        assert "MLFLOW_RUN_ID" not in os.environ
+
+    assert kedro_session_run.called_with("__default__", node_names=["node"])
 
 
 @pytest.mark.parametrize("kedro_sagemaker_debug", ("0", "1"))

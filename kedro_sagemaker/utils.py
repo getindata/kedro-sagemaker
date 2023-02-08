@@ -171,3 +171,13 @@ def docker_push(image: str) -> int:
     if rv:
         logger.error("Docker push has failed.")
     return rv
+
+
+def is_mlflow_enabled() -> bool:
+    try:
+        import kedro_mlflow  # NOQA
+        import mlflow  # NOQA
+
+        return True
+    except ImportError:
+        return False

@@ -12,6 +12,7 @@ from kedro.framework.startup import ProjectMetadata
 from kedro_sagemaker.cli_functions import (
     docker_autobuild,
     get_context_and_pipeline,
+    lookup_mlflow_run_id,
     parse_extra_params,
     write_file_and_confirm_overwrite,
 )
@@ -20,14 +21,17 @@ from kedro_sagemaker.config import CONFIG_TEMPLATE_YAML
 from kedro_sagemaker.constants import (
     KEDRO_SAGEMAKER_ARGS,
     KEDRO_SAGEMAKER_DEBUG,
+    KEDRO_SAGEMAKER_EXECUTION_ARN,
     KEDRO_SAGEMAKER_S3_TEMP_DIR_NAME,
     KEDRO_SAGEMAKER_WORKING_DIRECTORY,
+    MLFLOW_TAG_EXECUTION_ARN,
 )
 from kedro_sagemaker.docker import DOCKERFILE_TEMPLATE, DOCKERIGNORE_TEMPLATE
 from kedro_sagemaker.runner import SageMakerPipelinesRunner
 from kedro_sagemaker.utils import (
     CliContext,
     KedroContextManager,
+    is_mlflow_enabled,
     parse_flat_parameters,
 )
 
@@ -196,9 +200,11 @@ def run(
         )
 
         is_ok = client.run(
-            local,
-            wait_for_completion,
-            lambda p: click.echo(f"Pipeline ARN: {p.describe()['PipelineArn']}"),
+            is_local=local,
+            wait_for_completion=wait_for_completion,
+            on_pipeline_started=lambda p: click.echo(
+                f"Pipeline ARN: {p.describe()['PipelineArn']}"
+            ),
         )
 
         if is_ok:
@@ -341,5 +347,35 @@ def execute(ctx: CliContext, pipeline: str, node: str, params: str):
     with KedroContextManager(
         ctx.metadata.package_name, env=ctx.env, extra_params=parameters
     ) as mgr:
+        if is_mlflow_enabled():
+            env_key, env_value = lookup_mlflow_run_id(
+                mgr.context, os.getenv(KEDRO_SAGEMAKER_EXECUTION_ARN)
+            )
+            if env_value is not None:
+                click.echo(f"Mlflow run id: {env_value}")
+                os.environ[env_key] = env_value
+
         runner = SageMakerPipelinesRunner()
         mgr.session.run(pipeline, node_names=[node], runner=runner)
+
+
+@sagemaker_group.command(hidden=True)
+@click.pass_obj
+def mlflow_start(ctx: CliContext):
+    """
+    Registers new mlflow run with Sagemaker Execution ARN inside the tags
+    """
+    import mlflow
+    from kedro_mlflow.config.kedro_mlflow_config import KedroMlflowConfig
+
+    with KedroContextManager(ctx.metadata.package_name, env=ctx.env) as mgr:
+        mlflow_conf: KedroMlflowConfig = mgr.context.mlflow
+
+    run = mlflow.start_run(
+        experiment_id=mlflow.get_experiment_by_name(
+            mlflow_conf.tracking.experiment.name
+        ).experiment_id,
+        nested=False,
+    )
+    mlflow.set_tag(MLFLOW_TAG_EXECUTION_ARN, os.environ[KEDRO_SAGEMAKER_EXECUTION_ARN])
+    click.echo(f"Started run: {run.info.run_id}")

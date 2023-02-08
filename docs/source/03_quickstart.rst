@@ -5,7 +5,7 @@ Before you start, make sure that you have the following:
 
 -  AWS CLI installed
 -  AWS SageMaker domain
--  SageMaker Execution role ARN (in a form `arn:aws:iam::<ID>:role/service-role/AmazonSageMaker-ExecutionRole-<NUMBERS>`)
+-  SageMaker Execution role ARN (in a form `arn:aws:iam::<ID>:role/service-role/AmazonSageMaker-ExecutionRole-<NUMBERS>`). If you don't have one, follow the [official AWS docs](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html#sagemaker-roles-create-execution-role).
 -  S3 bucket that the above role has R/W access
 -  Docker installed
 -  Amazon Elastic Container Registry (`Amazon ECR <https://aws.amazon.com/ecr/>`__) repository created that the above role has read access and you have write access
@@ -100,6 +100,10 @@ Finally, you will see similar logs in your terminal:
 
 |Kedro SageMaker Pipelines execution|
 
+Additionally, if you have (`kedro-mlflow <https://kedro-mlflow.readthedocs.io/en/stable/>`__) plugin installed, an additional node called `start-mlflow-run` will appear on execution graph. It's job is to log the SageMaker's Pipeline Execution ARN (so you can link runs with mlflow with runs in SageMaker) and make sure that all nodes use common Mlflow run.
+
+|Kedro SageMaker Pipeline with Mlflow|
 
 .. |Kedro SageMaker Pipelines execution| image:: ../images/sagemaker_running_pipeline.gif
 
+.. |Kedro SageMaker Pipeline with Mlflow| image:: ../images/pipeline_with_mlflow.gif
