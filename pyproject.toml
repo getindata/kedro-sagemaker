@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "kedro-sagemaker"
-version = "0.1.1"
+version = "0.2.0"
 description = "Kedro plugin with AWS SageMaker Pipelines support"
 readme = "README.md"
 authors = ['Marcin Zabłocki <marcin.zablocki@getindata.com>']
