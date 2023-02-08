@@ -115,7 +115,7 @@ def lookup_mlflow_run_id(context, sagemaker_execution_arn: str):
     importlib.reload(mlflow.tracking.request_header.registry)
 
     if len(mlflow_runs) == 0:
-        logger.warn(
+        logger.warning(
             "Unable to find parent mlflow run id for the current execution (%s)",
             sagemaker_execution_arn,
         )
