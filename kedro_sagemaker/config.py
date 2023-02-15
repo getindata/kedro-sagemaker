@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import yaml
 from pydantic import BaseModel
@@ -14,6 +14,8 @@ class ResourceConfig(BaseModel):
     instance_type: str
     instance_count: int = 1
     timeout_seconds: int = 24 * 60 * 60
+    security_group_ids: Optional[List[str]] = None
+    subnets: Optional[List[str]] = None
 
 
 class SageMakerConfig(BaseModel):
@@ -52,6 +54,8 @@ aws:
       instance_count: 1
       instance_type: ml.m5.large
       timeout_seconds: 86400
+      security_group_ids: null
+      subnets: null
   sagemaker:
     # (optional) mapping between kedro pipeline names (keys) and SageMaker pipeline names
     # Note that SageMaker does not support underscores in pipeline names.

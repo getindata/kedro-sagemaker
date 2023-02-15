@@ -9,6 +9,7 @@ from kedro.pipeline import Pipeline as KedroPipeline
 from kedro.pipeline.node import Node as KedroNode
 from sagemaker import Model, Processor
 from sagemaker.estimator import Estimator
+from sagemaker.network import NetworkConfig
 from sagemaker.workflow.execution_variables import ExecutionVariables
 from sagemaker.workflow.model_step import ModelStep
 from sagemaker.workflow.parameters import (
@@ -285,6 +286,10 @@ class KedroSageMakerGenerator:
                     KEDRO_SAGEMAKER_EXECUTION_ARN: ExecutionVariables.PIPELINE_EXECUTION_ARN,
                     **sm_param_envs,
                 },
+                network_config=NetworkConfig(
+                    security_group_ids=node_resources.security_group_ids,
+                    subnets=node_resources.subnets,
+                ),
             ),
             display_name=node.name,
             description=node.name,
@@ -392,6 +397,8 @@ class KedroSageMakerGenerator:
                 ].properties.ModelArtifacts.S3ModelArtifacts
                 if sagemaker_model_inputs
                 else None,
+                security_group_ids=node_resources.security_group_ids,
+                subnets=node_resources.subnets,
             ),
             display_name=node.name,
             description=node.name,
