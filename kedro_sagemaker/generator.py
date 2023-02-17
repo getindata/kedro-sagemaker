@@ -125,7 +125,7 @@ class KedroSageMakerGenerator:
     def _get_default_resources(self) -> ResourceConfig:
         return ResourceConfig(instance_type="ml.m5.large")
 
-    def _get_resources_for_node(self, node: KedroNode):
+    def _get_resources_for_node(self, node: Union[KedroNode, SimpleNamespace]):
         node_resources = next(
             (
                 self.config.aws.resources.get(n)
@@ -140,7 +140,9 @@ class KedroSageMakerGenerator:
             defaults = defaults.copy(update=defined_default.dict())
 
         if node_resources:
-            return defaults.copy(update=node_resources.dict())
+            return defaults.copy(
+                update={key: val for key, val in node_resources if val is not None}
+            )
         else:
             return defaults
 
@@ -229,9 +231,10 @@ class KedroSageMakerGenerator:
         return smp
 
     def _add_mlflow_support(self, steps, runner_config):
+        mlflow_node_namespace = SimpleNamespace(name="start-mlflow-run", tags=[])
         mlflow_start_run = self._create_processing_step(
-            node=SimpleNamespace(name="start-mlflow-run"),
-            node_resources=ResourceConfig(instance_type="ml.t3.medium"),
+            node=mlflow_node_namespace,
+            node_resources=self._get_resources_for_node(mlflow_node_namespace),
             runner_config=runner_config,
             sm_node_name="start-mlflow-run",
             sm_param_envs={},

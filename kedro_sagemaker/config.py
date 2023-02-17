@@ -12,10 +12,10 @@ class SageMakerMetricsTrackingConfig:
 
 class ResourceConfig(BaseModel):
     instance_type: str
-    instance_count: int = 1
-    timeout_seconds: int = 24 * 60 * 60
-    security_group_ids: Optional[List[str]] = None
-    subnets: Optional[List[str]] = None
+    instance_count: Optional[int]
+    timeout_seconds: Optional[int]
+    security_group_ids: Optional[List[str]]
+    subnets: Optional[List[str]]
 
 
 class SageMakerConfig(BaseModel):
