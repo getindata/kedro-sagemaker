@@ -2,10 +2,6 @@
 
 ## [Unreleased]
 
-## [0.2.1] - 2023-02-17
-
--   Add subnets and security groups configuration for nodes
-
 ## [0.2.0] - 2023-02-08
 
 -   Support for Mlflow with shared run across pipeline steps
