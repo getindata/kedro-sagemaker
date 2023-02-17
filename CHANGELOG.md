@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.2.1] - 2023-02-17
+
+-   Add links to video tutorial in docs / readme
+
 ## [0.2.0] - 2023-02-08
 
 -   Support for Mlflow with shared run across pipeline steps
@@ -20,7 +24,9 @@
 
 -   Project seed prepared
 
-[Unreleased]: https://github.com/getindata/kedro-sagemaker/compare/0.2.0...HEAD
+[Unreleased]: https://github.com/getindata/kedro-sagemaker/compare/0.2.1...HEAD
+
+[0.2.1]: https://github.com/getindata/kedro-sagemaker/compare/0.2.0...0.2.1
 
 [0.2.0]: https://github.com/getindata/kedro-sagemaker/compare/0.1.1...0.2.0
 
