@@ -1,5 +1,12 @@
 Quickstart
 ----------
+You can go through the written quickstart here or watch the video on YouTube:
+
+.. raw:: html
+
+   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/yXIdz4kNMc8" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
+----
 
 Before you start, make sure that you have the following:
 

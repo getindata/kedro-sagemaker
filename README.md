@@ -41,4 +41,8 @@ Commands:
 ```
 
 ## Quickstart
-Follow **quickstart** section on [kedro-sagemaker.readthedocs.io](https://kedro-sagemaker.readthedocs.io/) to see how to run your Kedro project on AWS SageMaker.
+Follow **quickstart** section on [kedro-sagemaker.readthedocs.io](https://kedro-sagemaker.readthedocs.io/) to see how to run your Kedro project on AWS SageMaker or watch the video below:
+
+<a href="https://www.youtube.com/watch?v=yXIdz4kNMc8">
+    <img src="./docs/images/kedro-sagemaker-video-tutorial.jpg" alt="Kedro SageMaker video tutorial" title="Kedro SageMaker video tutorial" />
+</a>

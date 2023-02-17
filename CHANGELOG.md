@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   Add links to video tutorial in docs / readme
+
 ## [0.2.0] - 2023-02-08
 
 -   Support for Mlflow with shared run across pipeline steps
