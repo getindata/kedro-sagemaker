@@ -17,7 +17,7 @@ from tests.utils import identity
 
 @sagemaker_metrics({"auc": "AUC: .*"})
 def identity_with_metric(x):
-    return x
+    pass
 
 
 sample_pipeline = pipeline(
