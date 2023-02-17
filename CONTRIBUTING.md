@@ -2,7 +2,7 @@
 ## PR Guidelines
 1. Fork branch from `develop`.
 2. Ensure to provide unit tests for new functionality.
-3. Install dev requirements: `poetry install` and setup a hook: `pre-commit install`
+3. Install dev requirements: `poetry install` and setup a hook: `poetry run pre-commit install`
 4. Update documentation accordingly.
 5. Update [changelog](CHANGELOG.md) according to ["Keep a changelog"](https://keepachangelog.com/en/1.0.0/) guidelines.
 6. Squash changes with a single commit as much as possible and ensure verbose PR name.
