@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.2.2] - 2023-02-20
+
+-   Add subnets and security groups configuration for nodes
+
 ## [0.2.1] - 2023-02-17
 
 -   Add links to video tutorial in docs / readme
