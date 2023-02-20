@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2023-02-20
+
+-   Add subnets and security groups configuration for nodes (<https://github.com/getindata/kedro-sagemaker/pull/11>) by [@wmikolajczyk-fandom](https://github.com/wmikolajczyk-fandom)
+
 ## [0.2.1] - 2023-02-17
 
 -   Add links to video tutorial in docs / readme
@@ -24,7 +28,9 @@
 
 -   Project seed prepared
 
-[Unreleased]: https://github.com/getindata/kedro-sagemaker/compare/0.2.1...HEAD
+[Unreleased]: https://github.com/getindata/kedro-sagemaker/compare/0.3.0...HEAD
+
+[0.3.0]: https://github.com/getindata/kedro-sagemaker/compare/0.2.1...0.3.0
 
 [0.2.1]: https://github.com/getindata/kedro-sagemaker/compare/0.2.0...0.2.1
 

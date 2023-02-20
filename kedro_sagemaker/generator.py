@@ -9,6 +9,7 @@ from kedro.pipeline import Pipeline as KedroPipeline
 from kedro.pipeline.node import Node as KedroNode
 from sagemaker import Model, Processor
 from sagemaker.estimator import Estimator
+from sagemaker.network import NetworkConfig
 from sagemaker.workflow.execution_variables import ExecutionVariables
 from sagemaker.workflow.model_step import ModelStep
 from sagemaker.workflow.parameters import (
@@ -124,7 +125,7 @@ class KedroSageMakerGenerator:
     def _get_default_resources(self) -> ResourceConfig:
         return ResourceConfig(instance_type="ml.m5.large")
 
-    def _get_resources_for_node(self, node: KedroNode):
+    def _get_resources_for_node(self, node: Union[KedroNode, SimpleNamespace]):
         node_resources = next(
             (
                 self.config.aws.resources.get(n)
@@ -139,7 +140,9 @@ class KedroSageMakerGenerator:
             defaults = defaults.copy(update=defined_default.dict())
 
         if node_resources:
-            return defaults.copy(update=node_resources.dict())
+            return defaults.copy(
+                update={key: val for key, val in node_resources if val is not None}
+            )
         else:
             return defaults
 
@@ -228,9 +231,10 @@ class KedroSageMakerGenerator:
         return smp
 
     def _add_mlflow_support(self, steps, runner_config):
+        mlflow_node_namespace = SimpleNamespace(name="start-mlflow-run", tags=[])
         mlflow_start_run = self._create_processing_step(
-            node=SimpleNamespace(name="start-mlflow-run"),
-            node_resources=ResourceConfig(instance_type="ml.t3.medium"),
+            node=mlflow_node_namespace,
+            node_resources=self._get_resources_for_node(mlflow_node_namespace),
             runner_config=runner_config,
             sm_node_name="start-mlflow-run",
             sm_param_envs={},
@@ -285,6 +289,10 @@ class KedroSageMakerGenerator:
                     KEDRO_SAGEMAKER_EXECUTION_ARN: ExecutionVariables.PIPELINE_EXECUTION_ARN,
                     **sm_param_envs,
                 },
+                network_config=NetworkConfig(
+                    security_group_ids=node_resources.security_group_ids,
+                    subnets=node_resources.subnets,
+                ),
             ),
             display_name=node.name,
             description=node.name,
@@ -392,6 +400,8 @@ class KedroSageMakerGenerator:
                 ].properties.ModelArtifacts.S3ModelArtifacts
                 if sagemaker_model_inputs
                 else None,
+                security_group_ids=node_resources.security_group_ids,
+                subnets=node_resources.subnets,
             ),
             display_name=node.name,
             description=node.name,

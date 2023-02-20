@@ -14,10 +14,24 @@ from kedro_sagemaker.decorators import sagemaker_metrics
 from kedro_sagemaker.generator import KedroSageMakerGenerator
 from tests.utils import identity
 
+
+@sagemaker_metrics({"auc": "AUC: .*"})
+def identity_with_metric(x):
+    pass
+
+
 sample_pipeline = pipeline(
     [
         node(identity, inputs="input_data", outputs="i2", name="node1"),
         node(identity, inputs="i2", outputs="output_data", name="node2"),
+    ]
+)
+
+
+sample_pipeline_with_training = pipeline(
+    [
+        node(identity, inputs="input_data", outputs="i2", name="node1"),
+        node(identity_with_metric, inputs="i2", outputs="output_data", name="node2"),
     ]
 )
 
@@ -157,6 +171,118 @@ def test_should_create_processor_based_on_the_config(context_mock):
         processor.env["KEDRO_SAGEMAKER_EXECUTION_ARN"]
         == ExecutionVariables.PIPELINE_EXECUTION_ARN
     )
+
+
+@patch("kedro.framework.project.pipelines", {"__default__": sample_pipeline})
+@patch("kedro.framework.context.KedroContext")
+def test_should_node_resources_override_only_not_none_fields(context_mock):
+    # given
+    config = _CONFIG_TEMPLATE.copy(deep=True)
+    config.aws.resources["__default__"].instance_count = 5
+    config.aws.resources["node1"] = ResourceConfig(instance_type="__instance_type__")
+
+    generator = KedroSageMakerGenerator("__default__", context_mock, config)
+    # when
+    pipeline = generator.generate()
+    # then
+    steps = {step.name: step for step in pipeline.steps}
+    processor = steps["node1"].processor
+
+    assert processor.instance_count == 5
+
+
+@patch("kedro.framework.project.pipelines", {"__default__": sample_pipeline})
+@patch("kedro.framework.context.KedroContext")
+def test_should_assign_subnets_and_security_groups_to_processor_node(context_mock):
+    # given
+    config = _CONFIG_TEMPLATE.copy(deep=True)
+    config.aws.resources["node1"] = ResourceConfig(
+        instance_type="__instance_type__",
+        security_group_ids=["sg1"],
+        subnets=["subnet1"],
+    )
+
+    generator = KedroSageMakerGenerator("__default__", context_mock, config)
+    # when
+    pipeline = generator.generate()
+    # then
+    steps = {step.name: step for step in pipeline.steps}
+    processor = steps["node1"].processor
+
+    assert processor.network_config.subnets == ["subnet1"]
+    assert processor.network_config.security_group_ids == ["sg1"]
+
+
+@patch("kedro.framework.project.pipelines", {"__default__": sample_pipeline})
+@patch("kedro.framework.context.KedroContext")
+def test_should_inherit_subnets_and_security_groups_processor_node(context_mock):
+    # given
+    config = _CONFIG_TEMPLATE.copy(deep=True)
+    config.aws.resources["__default__"].subnets = ["default_subnet1"]
+    config.aws.resources["__default__"].security_group_ids = ["default_sg1"]
+    config.aws.resources["node1"] = ResourceConfig(instance_type="__instance_type__")
+
+    generator = KedroSageMakerGenerator("__default__", context_mock, config)
+    # when
+    pipeline = generator.generate()
+    # then
+    steps = {step.name: step for step in pipeline.steps}
+    processor = steps["node1"].processor
+
+    assert processor.network_config.subnets == ["default_subnet1"]
+    assert processor.network_config.security_group_ids == ["default_sg1"]
+
+
+@patch(
+    "kedro.framework.project.pipelines", {"__default__": sample_pipeline_with_training}
+)
+@patch("kedro.framework.context.KedroContext")
+def test_should_assign_subnets_and_security_groups_to_training_node(context_mock):
+    # given
+    context_mock.env = uuid4().hex
+
+    config = _CONFIG_TEMPLATE.copy(deep=True)
+    config.aws.resources["node1"] = ResourceConfig(
+        instance_type="__instance_type__",
+        security_group_ids=["sg1"],
+        subnets=["subnet1"],
+    )
+
+    generator = KedroSageMakerGenerator("__default__", context_mock, config)
+    # when
+    pipeline = generator.generate()
+    # then
+    steps = {step.name: step for step in pipeline.steps}
+    processor = steps["node1"].processor
+
+    assert steps["node2"].step_type == StepTypeEnum.TRAINING
+    assert processor.network_config.subnets == ["subnet1"]
+    assert processor.network_config.security_group_ids == ["sg1"]
+
+
+@patch(
+    "kedro.framework.project.pipelines", {"__default__": sample_pipeline_with_training}
+)
+@patch("kedro.framework.context.KedroContext")
+def test_should_inherit_subnets_and_security_groups_training_node(context_mock):
+    # given
+    context_mock.env = uuid4().hex
+
+    config = _CONFIG_TEMPLATE.copy(deep=True)
+    config.aws.resources["__default__"].subnets = ["default_subnet1"]
+    config.aws.resources["__default__"].security_group_ids = ["default_sg1"]
+    config.aws.resources["node1"] = ResourceConfig(instance_type="__instance_type__")
+
+    generator = KedroSageMakerGenerator("__default__", context_mock, config)
+    # when
+    pipeline = generator.generate()
+    # then
+    steps = {step.name: step for step in pipeline.steps}
+    processor = steps["node1"].processor
+
+    assert steps["node2"].step_type == StepTypeEnum.TRAINING
+    assert processor.network_config.subnets == ["default_subnet1"]
+    assert processor.network_config.security_group_ids == ["default_sg1"]
 
 
 @patch("kedro.framework.project.pipelines", {"__default__": sample_pipeline})
@@ -323,11 +449,6 @@ def test_should_mark_node_as_estimator_if_it_exposes_metrics(context_mock, no_ml
     generator = KedroSageMakerGenerator("__default__", context_mock, config)
 
     try:
-
-        @sagemaker_metrics({"auc": "AUC: .*"})
-        def identity_with_metric(x):
-            pass
-
         sample_pipeline.nodes[0].func = identity_with_metric
 
         # when
