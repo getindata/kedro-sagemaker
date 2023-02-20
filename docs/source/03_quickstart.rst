@@ -114,3 +114,49 @@ Additionally, if you have (`kedro-mlflow <https://kedro-mlflow.readthedocs.io/en
 .. |Kedro SageMaker Pipelines execution| image:: ../images/sagemaker_running_pipeline.gif
 
 .. |Kedro SageMaker Pipeline with Mlflow| image:: ../images/pipeline_with_mlflow.gif
+
+Resource customization
+----
+You can configure resources used by your nodes in `sagemaker.yml` under `resources` key
+
+Here is the definition of default values for nodes:
+
+.. code:: yaml
+
+  resources:
+    __default__:
+      instance_count: 1
+      instance_type: ml.m5.large
+      timeout_seconds: 86400
+      security_group_ids: null
+      subnets: null
+
+
+To specify custom resources just provide node name or node tag below `__default__` configuration
+
+Example custom config:
+
+.. code:: yaml
+
+  resources:
+    __default__:
+      instance_count: 1
+      instance_type: ml.m5.large
+      timeout_seconds: 86400
+      security_group_ids: null
+      subnets: null
+    train_on_gpu_node:
+      instance_count: 1
+      instance_type: ml.p3.2xlarge
+      security_group_ids: ["example-security-group-id"]
+      subnets: ["example-subnet-id"]
+    some_test_node:
+      instance_count: 1
+      instance_type: ml.t3.medium
+
+The default behavior is that only values defined in node resources will override `__default__` values and the rest is inherited.
+
+So in this example
+
+* `train_on_gpu_node` inherits `timeout_seconds: 86400` from `__default__`
+* `some_test_node` inherits `timeout_seconds: 86400`, `security_group_ids: null` and `subnets: null` from `__default__`
