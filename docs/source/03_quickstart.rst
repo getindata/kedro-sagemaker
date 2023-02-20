@@ -119,7 +119,7 @@ Resource customization
 ----
 You can configure resources used by your nodes in `sagemaker.yml` under `resources` key
 
-The definition of default values for nodes:
+Here is the definition of default values for nodes:
 
 .. code:: yaml
 
@@ -132,17 +132,7 @@ The definition of default values for nodes:
       subnets: null
 
 
-How to specify custom resources?
-
-.. code:: yaml
-
-  resources:
-    <NODE_NAME_OR_NODE_TAG>:
-      instance_count: <NUMBER>
-      instance_type: <INSTANCE TYPE STRING>
-      timeout_seconds: <NUMBER>
-      security_group_ids: <null OR LIST OF SECURITY GROUPS>
-      subnets: <null OR LIST OF SUBNETS>
+To specify custom resources just provide node name or node tag below `__default__` configuration
 
 Example custom config:
 
