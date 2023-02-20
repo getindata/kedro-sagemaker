@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] - 2023-02-20
+## [Unreleased]
 
 -   Add subnets and security groups configuration for nodes
 
