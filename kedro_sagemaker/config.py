@@ -52,7 +52,7 @@ aws:
   resources:
     __default__:
       instance_count: 1
-      instance_type: ml.m5.large
+      instance_type: ml.t3.medium
       timeout_seconds: 86400
       security_group_ids: null
       subnets: null
@@ -62,7 +62,7 @@ aws:
     # Here you can map for example add `__default__: "my-pipeline"`
     # to make the `__default__` Kedro pipeline appear as `my-pipeline` in SageMaker UI
     pipeline_names_mapping:
-      kedro_pipeline_name: "sagemaker-pipeline-name"
+      __default__: "my-pipeline"
 docker:
   image: "{docker_image}"
   working_directory: /home/kedro
