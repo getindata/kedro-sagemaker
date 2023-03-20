@@ -50,7 +50,7 @@ def test_should_generate_pipeline_with_processing_steps(context_mock, no_mlflow)
 
     # then
     assert isinstance(pipeline.sagemaker_session, pipeline_context.PipelineSession)
-    assert pipeline.name == "kedro-sagemaker-pipeline"  # a default one
+    assert pipeline.name == "kedro-sagemaker-default-pipeline"  # a default one
     assert len(pipeline.parameters) == 0
     assert len(pipeline.steps) == 2
 

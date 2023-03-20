@@ -59,10 +59,10 @@ aws:
   sagemaker:
     # (optional) mapping between kedro pipeline names (keys) and SageMaker pipeline names
     # Note that SageMaker does not support underscores in pipeline names.
-    # Here you can map for example add `__default__: "my-pipeline"`
-    # to make the `__default__` Kedro pipeline appear as `my-pipeline` in SageMaker UI
+    # Here you can map for example add `__default__: "kedro-sagemaker-default-pipeline"`
+    # to make the `__default__` Kedro pipeline appear as `kedro-sagemaker-default-pipeline` in SageMaker UI
     pipeline_names_mapping:
-      __default__: "my-pipeline"
+      __default__: "kedro-sagemaker-default-pipeline"
 docker:
   image: "{docker_image}"
   working_directory: /home/kedro
