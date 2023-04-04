@@ -119,7 +119,7 @@ class KedroSageMakerGenerator:
 
     def _get_sagemaker_pipeline_name(self) -> str:
         return (self.config.aws.sagemaker.pipeline_names_mapping or {}).get(
-            self.pipeline_name, "kedro-sagemaker-pipeline"
+            self.pipeline_name, "kedro-sagemaker-default-pipeline"
         )
 
     def _get_default_resources(self) -> ResourceConfig:
