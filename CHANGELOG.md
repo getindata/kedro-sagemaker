@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-  Updating dependencies, most notably kedro to 0.18.9 and mlflow to 2.3.2
+
 ## [0.3.0] - 2023-02-20
 
 -   Add subnets and security groups configuration for nodes (<https://github.com/getindata/kedro-sagemaker/pull/11>) by [@wmikolajczyk-fandom](https://github.com/wmikolajczyk-fandom)

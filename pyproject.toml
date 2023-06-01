@@ -14,7 +14,7 @@ classifiers = [
     "Development Status :: 4 - Beta", # license and python versions added automatically
 ]
 [tool.poetry.group.dev.dependencies]
-pytest = "<7"
+pytest = "<8"
 pytest-cov = ">=2.8.0,<4.0.0"
 tox = ">=3.25.1,<4.0.0"
 numpy = "^1.23.5"
