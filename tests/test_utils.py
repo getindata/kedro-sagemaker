@@ -118,7 +118,7 @@ def test_docker_build(exit_code):
     with patch(
         "subprocess.run", return_value=Mock(returncode=exit_code)
     ) as subprocess_run:
-        result = docker_build(".", "my_image:latest")
+        result = docker_build(".", "my_image:latest","platforms")
         assert exit_code == result, "Invalid exit code"
         subprocess_run.assert_called_once()
 

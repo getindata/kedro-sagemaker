@@ -68,7 +68,7 @@ def docker_autobuild(auto_build, click_context, image, mgr, yes):
         if not yes and not click.confirm("Continue?", default=True):
             click_context.exit(1)
 
-        if (rv := docker_build(str(mgr.context.project_path), image)) != 0:
+        if (rv := docker_build(str(mgr.context.project_path), image, str(mgr.plugin_config.docker.platforms))) != 0:
             click_context.exit(rv)
         if (rv := docker_push(image)) != 0:
             click_context.exit(rv)
