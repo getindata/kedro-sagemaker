@@ -11,7 +11,7 @@ import cloudpickle
 import numpy as np
 import pandas as pd
 import pytest
-from kedro.io import DataSetError
+from kedro.io import DatasetError
 
 from kedro_sagemaker.constants import KEDRO_SAGEMAKER_S3_TEMP_DIR_NAME
 from kedro_sagemaker.datasets import (
@@ -52,7 +52,7 @@ def test_can_load_from_sagemaker_model_dataset(store_method, tmp_path):
     ), "Data after loading is not the same as saved data"
 
 
-@pytest.mark.xfail(raises=DataSetError)
+@pytest.mark.xfail(raises=DatasetError)
 def test_sagemaker_dataset_no_data_to_load(tmp_path):
     ds = SageMakerModelDataset(sagemaker_path=str(tmp_path))
     ds.load()

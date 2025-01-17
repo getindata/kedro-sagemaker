@@ -42,15 +42,15 @@ exclude_lines = [
 known_third_party = ["pydantic","semver","setuptools"]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.11"
-kedro = ">=0.18.3,<0.19"
-sagemaker = "^2.117.0"
-zstandard = ">=0.19.0,<0.20.0"
-s3fs = "^2022.11.0"
-backoff = "^2.2.1"
-pydantic = "^1.10.2"
-cloudpickle = "^2.2.0"
-tarsafe = "0.0.4"
+python = ">=3.9"
+kedro = ">=0.19.0"
+sagemaker = ">=2.148.0"
+zstandard = ">=0.19.0"
+s3fs = ">=2022.11.0"
+backoff = ">=2.2.1"
+pydantic = ">=1.10.2"
+cloudpickle = ">=2.2.0"
+tarsafe = ">=0.0.4"
 
 [tool.poetry.plugins] # Optional super table
 

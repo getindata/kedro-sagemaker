@@ -17,24 +17,17 @@ Before you start, make sure that you have the following:
 -  Docker installed
 -  Amazon Elastic Container Registry (`Amazon ECR <https://aws.amazon.com/ecr/>`__) repository created that the above role has read access and you have write access
 
-1. Prepare new virtual environment with Python >=3.8. Install the
-   packages
+1. Prepare new virtual environment with Python >=3.9. Install the package
 
 .. code:: console
 
-   pip install "kedro>=0.18.3,<0.19" "kedro-sagemaker"
+   pip install "kedro-sagemaker"
 
-2. Create new project (e.g. from starter). !!! Make sure you don't name it ``kedro-sagemaker`` because you will overwrite Python module name.
+2. 'Create new kedro project <https://docs.kedro.org/en/stable/get_started/new_project.html>''). !!! Make sure you don't name it ``kedro-sagemaker`` because you will overwrite Python module name.
 
 .. code:: console
 
-    kedro new --starter=spaceflights
-
-    Project Name
-    ============
-    Please enter a human readable name for your new project.
-    Spaces, hyphens, and underscores are allowed.
-     [Spaceflights]: kedro_sagemaker_demo
+    kedro new --name=kedro_sagemaker_demo --tools=lint,test,data --example=y
 
     The project name 'kedro_sagemaker_demo' has been applied to:
     - The project title in /Users/marcin/Dev/tmp/kedro-sagemaker-demo/README.md
@@ -42,11 +35,9 @@ Before you start, make sure that you have the following:
     - The project's python package in /Users/marcin/Dev/tmp/kedro-sagemaker-demo/src/kedro_sagemaker_demo
 
 3. Go to the project's directory: ``cd kedro-sagemaker-demo``
-4. Add ``kedro-sagemaker`` to ``src/requirements.txt``
-5. (optional) Remove ``kedro-telemetry`` from ``src/requirements.txt``
-   or set appropriate settings
-   (`https://github.com/kedro-org/kedro-plugins/tree/main/kedro-telemetry <https://github.com/kedro-org/kedro-plugins/tree/main/kedro-telemetry>`__).
-6. Install the requirements ``pip install -r src/requirements.txt``
+4. Add ``kedro-sagemaker`` to ``requirements.txt``
+5. (Optional) If you prefer not to send telemetry, you can `withdraw your consent <https://docs.kedro.org/en/stable/configuration/telemetry.html#how-do-i-withdraw-consent>`__.
+6. Install the requirements ``pip install -r requirements.txt``
 7. Initialize Kedro SageMaker plugin. Provide name of the S3 bucket and full ARN of the SageMaker Execution role (which should also have access to the S3 bucket). For ``DOCKER_IMAGE`` - use full name of the ECR repository that you want to push your docker image.
 
 .. code:: console
@@ -59,10 +50,7 @@ The ``init`` command automatically will create:
 - ``conf/base/sagemaker.yml`` configuration file, which controls this plugin's behaviour
 - ``Dockerfile`` and ``.dockerignore`` files pre-configured to work with Amazon SageMaker
 
-8. Adjust the Data Catalog - the default one stores all data locally,
-   whereas the plugin will automatically use S3. Only
-   input data is required to be read locally. Final
-   ``conf/base/catalog.yml`` should look like this:
+8. Adjust the Data Catalog. By default, all data is stored locally, but the plugin automatically uses S3 for storage. Only input data needs to be read locally. If you have intermediate data stored in memory, you must specify it in the Data Catalog to save it in persistent storage (S3), as each node will execute in a separate container. The final version of ``conf/base/catalog.yml`` should look like this:
 
 .. code:: yaml
 
@@ -80,6 +68,19 @@ The ``init`` command automatically will create:
      type: pandas.ExcelDataSet
      filepath: data/01_raw/shuttles.xlsx
      layer: raw
+    
+   preprocessed_companies:
+     type: pandas.ParquetDataset
+     filepath: s3://<bucket-name>/02_intermediate/preprocessed_companies.parquet
+
+    # ...
+
+   X_test:
+     type: pandas.CSVDataset
+     filepath: s3://<bucket-name>/02_intermediate/X_test.csv
+
+    # ...
+
 
 9. (optional) Login to ECR, if you have not logged in before. You can run the following snippet in the terminal (adjust the region to match your configuration).
 

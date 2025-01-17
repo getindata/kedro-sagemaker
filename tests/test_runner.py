@@ -1,7 +1,7 @@
 import os
 from unittest.mock import patch
 
-from kedro.io import DataCatalog, MemoryDataSet
+from kedro.io import DataCatalog, MemoryDataset
 from kedro.pipeline import Pipeline
 
 from kedro_sagemaker.constants import (
@@ -17,7 +17,7 @@ def test_can_invoke_dummy_pipeline(
     runner = patched_sagemaker_runner
     catalog = DataCatalog()
     input_data = ["yolo :)"]
-    catalog.add("input_data", MemoryDataSet(data=input_data))
+    catalog.add("input_data", MemoryDataset(data=input_data))
     results = runner.run(
         dummy_pipeline,
         catalog,
@@ -32,7 +32,7 @@ def test_runner_fills_missing_datasets(
     input_data = ["yolo :)"]
     runner = patched_sagemaker_runner
     catalog = DataCatalog()
-    catalog.add("input_data", MemoryDataSet(data=input_data))
+    catalog.add("input_data", MemoryDataset(data=input_data))
     for node_no in range(3):
         results = runner.run(
             dummy_pipeline.filter(node_names=[f"node{node_no+1}"]),
