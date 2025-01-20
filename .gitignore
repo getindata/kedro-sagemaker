@@ -166,3 +166,5 @@ credentials.json
 
 .idea
 tests/mlruns
+
+poetry.lock
