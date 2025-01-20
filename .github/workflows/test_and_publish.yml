@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ '3.8', '3.9', '3.10']
+        python-version: ['3.9', '3.10']
 
     steps:
     - uses: actions/checkout@v2
@@ -43,7 +43,7 @@ jobs:
       env:
         AWS_DEFAULT_REGION: eu-central-1
       run: |
-        pip install tox-pip-version tox-gh-actions "tox<4.0.0"
+        pip install tox-pip-version tox-gh-actions tox
         tox -v
 
     - name: Store coverage reports
@@ -105,7 +105,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ 3.8 ]
+        python-version: [ 3.9 ]
     env:
       PYTHON_PACKAGE: kedro_sagemaker
     steps:
