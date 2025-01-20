@@ -22,21 +22,18 @@ jobs:
         python-version: ['3.9', '3.10']
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     
     - name: Setup python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2.2.1
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Setup poetry
+    - name: Install dependencies and run pre-commit
       run: |
-        python -V
-        python -m pip install poetry
-
-    - name: Check pre-commit status
-      run: |
-        poetry install -v
+        python -m pip install --upgrade pip
+        pip install poetry
+        poetry install
         poetry run pre-commit run --all-files
 
     - name: Test with tox
@@ -58,7 +55,7 @@ jobs:
     needs: unit_tests
     steps:
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 0
 
@@ -110,11 +107,11 @@ jobs:
       PYTHON_PACKAGE: kedro_sagemaker
     steps:
       - name: Checkout the repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0  # necessary to enable merging, all the history is needed
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Build package dist from source # A better way will be : https://packaging.python.org/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/ but pep 517 is still marked as experimental
