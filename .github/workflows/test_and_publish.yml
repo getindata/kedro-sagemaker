@@ -36,12 +36,15 @@ jobs:
         poetry install
         poetry run pre-commit run --all-files
 
-    - name: Test with tox
+    - name: Run Unit Tests with Coverage
       env:
         AWS_DEFAULT_REGION: eu-central-1
       run: |
-        pip install tox-pip-version tox-gh-actions tox
-        tox -v
+        poetry run pytest --cov kedro_sagemaker \
+                          --cov-report xml \
+                          --cov-report term-missing \
+                          --ignore=venv \
+                          --verbose
 
     - name: Store coverage reports
       uses: actions/upload-artifact@v3
