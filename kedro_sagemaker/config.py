@@ -25,6 +25,7 @@ class SageMakerConfig(BaseModel):
 class DockerConfig(BaseModel):
     image: str
     working_directory: str = "/home/kedro"
+    platforms: str
 
 
 class AwsConfig(BaseModel):
@@ -66,6 +67,7 @@ aws:
 docker:
   image: "{docker_image}"
   working_directory: /home/kedro
+  platforms: "linux/amd64"
 """.strip()
 
 # This auto-validates the template above during import

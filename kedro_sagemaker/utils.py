@@ -8,7 +8,9 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import Any, List, MutableMapping, Optional, Union
 
+import kedro
 from kedro.framework.session import KedroSession
+from packaging import version
 
 from kedro_sagemaker.config import KedroSageMakerPluginConfig
 from kedro_sagemaker.constants import (
@@ -67,9 +69,18 @@ class KedroContextManager:
 
     @cached_property
     def plugin_config(self) -> KedroSageMakerPluginConfig:
-        return KedroSageMakerPluginConfig.parse_obj(
-            self.context.config_loader.get("sagemaker*")
-        )
+        # from this version onwards (not inclusive) config_loader uses OmegaConfigLoader which requires a different syntax
+        required_version = version.parse("0.18.4")
+        current_version = version.parse(kedro.__version__)
+
+        if current_version > required_version:
+            return KedroSageMakerPluginConfig.parse_obj(
+                self.context.config_loader["parameters"]
+            )
+        else:
+            return KedroSageMakerPluginConfig.parse_obj(
+                self.context.config_loader.get("parameters*")
+            )
 
     @cached_property
     def context(self):
@@ -147,14 +158,18 @@ def parse_flat_parameters(
     return params
 
 
-def docker_build(path: str, image: str) -> int:
+def docker_build(path: str, image: str, platforms: str) -> int:
     rv = subprocess.run(
         [
             "docker",
+            "buildx",
             "build",
+            "--platform",
+            platforms,
             path,
             "-t",
             image,
+            "--push"
         ],
         stdout=sys.stdout,
         stderr=subprocess.STDOUT,
