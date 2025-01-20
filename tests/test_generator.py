@@ -118,15 +118,15 @@ def test_should_process_kedro_parameters(context_mock):
         for i in range(5)
     }
 
-    assert params_transformed["numeric.int_param"].parameter_type.python_type == int
+    assert params_transformed["numeric.int_param"].parameter_type.python_type is int
     assert params_transformed["numeric.int_param"].default_value == 42
-    assert params_transformed["numeric.float_param"].parameter_type.python_type == float
+    assert params_transformed["numeric.float_param"].parameter_type.python_type is float
     assert params_transformed["numeric.float_param"].default_value == 3.14
-    assert params_transformed["string"].parameter_type.python_type == str
+    assert params_transformed["string"].parameter_type.python_type is str
     assert params_transformed["string"].default_value == "alamakota"
-    assert params_transformed["is_great_plugin"].parameter_type.python_type == bool
+    assert params_transformed["is_great_plugin"].parameter_type.python_type is bool
     assert params_transformed["is_great_plugin"].default_value is True
-    assert params_transformed["features"].parameter_type.python_type == str
+    assert params_transformed["features"].parameter_type.python_type is str
     assert params_transformed["features"].default_value == '["age", "gender"]'
 
 
