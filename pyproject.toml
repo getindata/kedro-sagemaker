@@ -20,7 +20,7 @@ numpy = ">=1.23.5"
 pandas = ">=1.5.2"
 pre-commit = ">=2.20.0"
 recommonmark = ">=0.7.1"
-mlflow = ">=0.12.0"
+kedro-mlflow = ">=0.12.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
