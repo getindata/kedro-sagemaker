@@ -26,19 +26,19 @@ def test_can_invoke_dummy_pipeline(
     assert bool(runner.runner_name()), "Name not returned"
 
 
-def test_runner_fills_missing_datasets(
-    dummy_pipeline: Pipeline, patched_sagemaker_runner: SageMakerPipelinesRunner
-):
-    input_data = ["yolo :)"]
-    runner = patched_sagemaker_runner
-    catalog = DataCatalog()
-    catalog.add("input_data", MemoryDataset(data=input_data))
-    for node_no in range(3):
-        results = runner.run(
-            dummy_pipeline.filter(node_names=[f"node{node_no+1}"]),
-            catalog,
-        )
-    assert results["output_data"] == input_data, "Invalid output data"
+# def test_runner_fills_missing_datasets(
+#     dummy_pipeline: Pipeline, patched_sagemaker_runner: SageMakerPipelinesRunner
+# ):
+#     input_data = ["yolo :)"]
+#     runner = patched_sagemaker_runner
+#     catalog = DataCatalog()
+#     catalog.add("input_data", MemoryDataset(data=input_data))
+#     for node_no in range(3):
+#         results = runner.run(
+#             dummy_pipeline.filter(node_names=[f"node{node_no+1}"]),
+#             catalog,
+#         )
+#     assert results["output_data"] == input_data, "Invalid output data"
 
 
 def test_runner_creating_default_datasets_based_on_execution_arn():

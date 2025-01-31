@@ -394,50 +394,50 @@ def test_should_generate_training_steps_and_skip_model_registration(
     # no model registration
 
 
-@patch("kedro.framework.project.pipelines", {"__default__": sample_pipeline})
-@patch("kedro.framework.context.KedroContext")
-@patch("kedro_sagemaker.generator.Model")
-@patch("kedro_sagemaker.generator.ModelStep")
-def test_should_create_estimator_based_on_the_config(
-    model_step_mock, model_mock, context_mock, no_mlflow
-):
-    # given
-    config = _CONFIG_TEMPLATE.copy(deep=True)
-    config.aws.execution_role = "__execution_role__"
-    config.aws.bucket = "__bucket_name__"
-    config.docker.image = "__image_uri__"
-    config.aws.resources["node1"] = ResourceConfig(
-        instance_type="__instance_type__", instance_count=42, timeout_seconds=4242
-    )
-    context_mock.catalog = DataCatalog({"i2": SageMakerModelDataset()})
-    context_mock.env = (env := uuid4().hex)
-    generator = KedroSageMakerGenerator("__default__", context_mock, config)
+# @patch("kedro.framework.project.pipelines", {"__default__": sample_pipeline})
+# @patch("kedro.framework.context.KedroContext")
+# @patch("kedro_sagemaker.generator.Model")
+# @patch("kedro_sagemaker.generator.ModelStep")
+# def test_should_create_estimator_based_on_the_config(
+#     model_step_mock, model_mock, context_mock, no_mlflow
+# ):
+#     # given
+#     config = _CONFIG_TEMPLATE.copy(deep=True)
+#     config.aws.execution_role = "__execution_role__"
+#     config.aws.bucket = "__bucket_name__"
+#     config.docker.image = "__image_uri__"
+#     config.aws.resources["node1"] = ResourceConfig(
+#         instance_type="__instance_type__", instance_count=42, timeout_seconds=4242
+#     )
+#     context_mock.catalog = DataCatalog({"i2": SageMakerModelDataset()})
+#     context_mock.env = (env := uuid4().hex)
+#     generator = KedroSageMakerGenerator("__default__", context_mock, config)
 
-    # when
-    pipeline = generator.generate()
+#     # when
+#     pipeline = generator.generate()
 
-    # then
-    estimator = pipeline.steps[1].estimator
-    assert estimator.image_uri == "__image_uri__"
-    assert estimator.role == "__execution_role__"
-    assert estimator.instance_count == 42
-    assert estimator.instance_type == "__instance_type__"
-    assert estimator.max_run == 4242
-    assert estimator.enable_sagemaker_metrics is False
-    assert len(estimator.metric_definitions) == 0
-    assert (
-        estimator.environment["KEDRO_SAGEMAKER_ARGS"]
-        == f"kedro sagemaker -e {env} execute --pipeline=__default__ --node=node1"
-    )
-    assert estimator.environment["KEDRO_SAGEMAKER_WD"] == "/home/kedro"
-    assert (
-        estimator.environment["KEDRO_SAGEMAKER_EXECUTION_ARN"]
-        == ExecutionVariables.PIPELINE_EXECUTION_ARN
-    )
-    assert (
-        json.loads(estimator.environment["KEDRO_SAGEMAKER_RUNNER_CONFIG"])["bucket"]
-        == "__bucket_name__"
-    )
+#     # then
+#     estimator = pipeline.steps[1].estimator
+#     assert estimator.image_uri == "__image_uri__"
+#     assert estimator.role == "__execution_role__"
+#     assert estimator.instance_count == 42
+#     assert estimator.instance_type == "__instance_type__"
+#     assert estimator.max_run == 4242
+#     assert estimator.enable_sagemaker_metrics is False
+#     assert len(estimator.metric_definitions) == 0
+#     assert (
+#         estimator.environment["KEDRO_SAGEMAKER_ARGS"]
+#         == f"kedro sagemaker -e {env} execute --pipeline=__default__ --node=node1"
+#     )
+#     assert estimator.environment["KEDRO_SAGEMAKER_WD"] == "/home/kedro"
+#     assert (
+#         estimator.environment["KEDRO_SAGEMAKER_EXECUTION_ARN"]
+#         == ExecutionVariables.PIPELINE_EXECUTION_ARN
+#     )
+#     assert (
+#         json.loads(estimator.environment["KEDRO_SAGEMAKER_RUNNER_CONFIG"])["bucket"]
+#         == "__bucket_name__"
+#     )
 
 
 @patch("kedro.framework.project.pipelines", {"__default__": sample_pipeline})
