@@ -17,6 +17,9 @@ Before you start, make sure that you have the following:
 -  Docker installed
 -  Amazon Elastic Container Registry (`Amazon ECR <https://aws.amazon.com/ecr/>`__) repository created that the above role has read access and you have write access
 
+In this example, we will create a Kedro project, convert its pipeline into an AWS SageMaker pipeline using the ``kedro-sagemaker`` plugin, deploy it to SageMaker, and run it there. To enable this, we will package the project into a Docker image and push it to an AWS ECR repository.
+The project will read data from local files within the Docker container and store intermediate and final results in S3. When executed on SageMaker, the converted pipeline will run each node in separate containers.
+
 1. Prepare new virtual environment with Python >=3.9. Install the package
 
 .. code:: console
@@ -50,7 +53,7 @@ The ``init`` command automatically will create:
 - ``conf/base/sagemaker.yml`` configuration file, which controls this plugin's behaviour
 - ``Dockerfile`` and ``.dockerignore`` files pre-configured to work with Amazon SageMaker
 
-8. Adjust the Data Catalog. By default, all data is stored locally, but the plugin automatically uses S3 for storage. Only input data needs to be read locally. If you have intermediate data stored in memory, you must specify it in the Data Catalog to save it in persistent storage (S3), as each node will execute in a separate container. The final version of ``conf/base/catalog.yml`` should look like this:
+8. Adjust the Data Catalog. By default, all data is stored locally. However, since each node will be executed separately in different container runs, all intermediate datasets should be saved in persistent storage, such as S3. The plugin automatically uses S3 to store datasets that aren't specified in the Data Catalog (i.e., `MemoryDatasets`). You can also manually add these datasets to the Data Catalog if needed. The final version of `conf/base/catalog.yml` should look like this:
 
 .. code:: yaml
 
@@ -75,7 +78,7 @@ The ``init`` command automatically will create:
 
     # ...
 
-   X_test:
+   X_test: # Optional, it would be saved to S3 by plugin automatically without that line
      type: pandas.CSVDataset
      filepath: s3://<bucket-name>/02_intermediate/X_test.csv
 
@@ -104,7 +107,15 @@ Finally, you will see similar logs in your terminal:
     Pipeline ARN: arn:aws:sagemaker:eu-central-1:781336771001:pipeline/kedro-sagemaker-pipeline
     Pipeline started successfully
 
+If you encounter any issues, you can manually execute the final step by running:
 
+```console
+kedro sagemaker compile
+```
+
+This command converts the Kedro pipeline into a `pipeline.json` file, located in the project's root directory. You can then create a new SageMaker pipeline in the AWS console and upload this file during the setup process.
+
+Additionally, you must manually build and push the Docker image to Amazon ECR before running the pipeline in the UI. If you're using a Mac and encounter compatibility issues, include `--platform linux/amd64` in the `docker build` command.
 
 |Kedro SageMaker Pipelines execution|
 
