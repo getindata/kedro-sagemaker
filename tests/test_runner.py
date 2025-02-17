@@ -22,7 +22,7 @@ def test_can_invoke_dummy_pipeline(
         dummy_pipeline,
         catalog,
     )
-    assert results["output_data"] == input_data, "No output data found"
+    assert catalog.load("output_data") == input_data, "No output data found"
     assert bool(runner.runner_name()), "Name not returned"
 
 
@@ -38,7 +38,7 @@ def test_runner_fills_missing_datasets(
             dummy_pipeline.filter(node_names=[f"node{node_no+1}"]),
             catalog,
         )
-    assert results["output_data"] == input_data, "Invalid output data"
+    assert catalog.load("output_data") == input_data, "Invalid output data"
 
 
 def test_runner_creating_default_datasets_based_on_execution_arn():
