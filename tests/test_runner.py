@@ -18,7 +18,7 @@ def test_can_invoke_dummy_pipeline(
     catalog = DataCatalog()
     input_data = ["yolo :)"]
     catalog.add("input_data", MemoryDataset(data=input_data))
-    results = runner.run(
+    runner.run(
         dummy_pipeline,
         catalog,
     )
@@ -34,7 +34,7 @@ def test_runner_fills_missing_datasets(
     catalog = DataCatalog()
     catalog.add("input_data", MemoryDataset(data=input_data))
     for node_no in range(3):
-        results = runner.run(
+        runner.run(
             dummy_pipeline.filter(node_names=[f"node{node_no+1}"]),
             catalog,
         )
