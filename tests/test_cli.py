@@ -74,6 +74,35 @@ def test_can_initialize_basic_plugin_config(
             click_confirm.assert_not_called()
 
 
+
+@patch("kedro.framework.startup._get_project_metadata", return_value=MagicMock(
+    package_name="test_package",
+    name="test_project",
+    version="0.1"
+))
+@pytest.mark.parametrize(
+    "extra_params",
+    ["", json.dumps({"my_extra_param": 123, "my": {"nested": {"parameter": 66.6}}})],
+    ids=("without extra params", "with extra params"),
+)
+def test_can_compile_the_pipeline(
+    get_project_metadata_mock, extra_params, patched_kedro_package, cli_context, dummy_pipeline, tmp_path: Path
+):
+    runner = CliRunner()
+    with patch.object(
+        KedroSageMakerGenerator, "get_kedro_pipeline", return_value=dummy_pipeline
+    ):
+        output_path = tmp_path / "pipeline.json"
+        result = runner.invoke(
+            cli.compile,
+            ["--output-path", str(output_path.absolute())]
+            + (["--params", extra_params] if extra_params else []),
+            obj=cli_context,
+        )
+
+        assert result.exit_code == 0
+        assert isinstance(json.loads(output_path.read_text()), dict)
+
 @patch("kedro.framework.startup._get_project_metadata", return_value=MagicMock(
     package_name="test_package",
     name="test_project",
@@ -341,26 +370,3 @@ def test_sagemaker_entrypoint_can_be_called_with_flat_params(
             c in subprocess_run.call_args.args[0]
             for c in (cmd, "--params", f"'{expected_params}'")
         )
-
-@pytest.mark.parametrize(
-    "extra_params",
-    ["", json.dumps({"my_extra_param": 123, "my": {"nested": {"parameter": 66.6}}})],
-    ids=("without extra params", "with extra params"),
-)
-def test_can_compile_the_pipeline(
-    extra_params, patched_kedro_package, cli_context, dummy_pipeline, tmp_path: Path
-):
-    runner = CliRunner()
-    with patch.object(
-        KedroSageMakerGenerator, "get_kedro_pipeline", return_value=dummy_pipeline
-    ):
-        output_path = tmp_path / "pipeline.json"
-        result = runner.invoke(
-            cli.compile,
-            ["--output-path", str(output_path.absolute())]
-            + (["--params", extra_params] if extra_params else []),
-            obj=cli_context,
-        )
-
-        assert result.exit_code == 0
-        assert isinstance(json.loads(output_path.read_text()), dict)
