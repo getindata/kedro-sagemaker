@@ -104,6 +104,7 @@ def write_file_and_confirm_overwrite(
 def lookup_mlflow_run_id(context, sagemaker_execution_arn: str):
     import mlflow
     from kedro_mlflow.config.kedro_mlflow_config import KedroMlflowConfig
+    from mlflow.environment_variables import MLFLOW_RUN_ID
 
     mlflow_conf: KedroMlflowConfig = context.mlflow
     mlflow_runs = mlflow.search_runs(
@@ -119,6 +120,6 @@ def lookup_mlflow_run_id(context, sagemaker_execution_arn: str):
             "Unable to find parent mlflow run id for the current execution (%s)",
             sagemaker_execution_arn,
         )
-        return mlflow.tracking._RUN_ID_ENV_VAR, None
+        return MLFLOW_RUN_ID.name, None
 
-    return mlflow.tracking._RUN_ID_ENV_VAR, mlflow_runs[0].info.run_id
+    return MLFLOW_RUN_ID.name, mlflow_runs[0].info.run_id

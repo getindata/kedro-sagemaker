@@ -19,35 +19,35 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ '3.8', '3.9', '3.10']
+        python-version: ['3.9', '3.10']
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     
     - name: Setup python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2.2.1
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Setup poetry
+    - name: Install dependencies and run pre-commit
       run: |
-        python -V
-        python -m pip install poetry
-
-    - name: Check pre-commit status
-      run: |
-        poetry install -v
+        python -m pip install --upgrade pip
+        pip install poetry
+        poetry install
         poetry run pre-commit run --all-files
 
-    - name: Test with tox
+    - name: Run Unit Tests with Coverage
       env:
         AWS_DEFAULT_REGION: eu-central-1
       run: |
-        pip install tox-pip-version tox-gh-actions "tox<4.0.0"
-        tox -v
+        poetry run pytest --cov kedro_sagemaker \
+                          --cov-report xml \
+                          --cov-report term-missing \
+                          --ignore=venv \
+                          --verbose
 
     - name: Store coverage reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-${{ matrix.python-version }}
         path: coverage.xml
@@ -58,11 +58,11 @@ jobs:
     needs: unit_tests
     steps:
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 0
 
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: coverage-3.9
         path: .
@@ -105,16 +105,16 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ 3.8 ]
+        python-version: [ 3.9 ]
     env:
       PYTHON_PACKAGE: kedro_sagemaker
     steps:
       - name: Checkout the repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0  # necessary to enable merging, all the history is needed
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Build package dist from source # A better way will be : https://packaging.python.org/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/ but pep 517 is still marked as experimental

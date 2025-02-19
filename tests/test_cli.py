@@ -23,7 +23,6 @@ from kedro_sagemaker.constants import (
 from kedro_sagemaker.generator import KedroSageMakerGenerator
 from tests.utils import assert_has_any_call_with_args
 
-
 @patch("click.confirm", return_value=True)
 @pytest.mark.parametrize(
     "clean_dir", (False, True), ids=("with existing config", "empty dir")
@@ -75,13 +74,19 @@ def test_can_initialize_basic_plugin_config(
             click_confirm.assert_not_called()
 
 
+
+@patch("kedro.framework.startup._get_project_metadata", return_value=MagicMock(
+    package_name="test_package",
+    name="test_project",
+    version="0.1"
+))
 @pytest.mark.parametrize(
     "extra_params",
     ["", json.dumps({"my_extra_param": 123, "my": {"nested": {"parameter": 66.6}}})],
     ids=("without extra params", "with extra params"),
 )
 def test_can_compile_the_pipeline(
-    extra_params, patched_kedro_package, cli_context, dummy_pipeline, tmp_path: Path
+    get_project_metadata_mock, extra_params, patched_kedro_package, cli_context, dummy_pipeline, tmp_path: Path
 ):
     runner = CliRunner()
     with patch.object(
@@ -98,7 +103,11 @@ def test_can_compile_the_pipeline(
         assert result.exit_code == 0
         assert isinstance(json.loads(output_path.read_text()), dict)
 
-
+@patch("kedro.framework.startup._get_project_metadata", return_value=MagicMock(
+    package_name="test_package",
+    name="test_project",
+    version="0.1"
+))
 @patch("click.confirm")
 @patch("subprocess.run", return_value=Mock(returncode=0))
 @patch("kedro_sagemaker.cli.SageMakerClient")
@@ -126,6 +135,7 @@ def test_can_run_the_pipeline(
     sagemaker_client,
     subprocess_run,
     click_confirm,
+    get_project_metadata_mock,
     auto_build,
     extra_params,
     patched_kedro_package,
@@ -189,7 +199,11 @@ def test_can_run_the_pipeline(
             == wait_for_completion
         )
 
-
+@patch("kedro.framework.startup._get_project_metadata", return_value=MagicMock(
+    package_name="test_package",
+    name="test_project",
+    version="0.1"
+))
 @patch("mlflow.start_run")
 @patch("mlflow.set_tag")
 @patch("mlflow.get_experiment_by_name")
@@ -197,6 +211,7 @@ def test_mlflow_start(
     mlflow_get_experiment_by_name,
     mlflow_set_tag,
     mlflow_start_run,
+    get_project_metadata_mock,
     cli_context,
     patched_kedro_package,
 ):
@@ -214,7 +229,11 @@ def test_mlflow_start(
     mlflow_start_run.assert_called_with(experiment_id=42, nested=False)
     mlflow_set_tag.assert_called_with(MLFLOW_TAG_EXECUTION_ARN, "execution-arn")
 
-
+@patch("kedro.framework.startup._get_project_metadata", return_value=MagicMock(
+    package_name="test_package",
+    name="test_project",
+    version="0.1"
+))
 @patch("kedro_sagemaker.cli.SageMakerPipelinesRunner")
 @patch("mlflow.search_runs")
 @patch("kedro_sagemaker.utils.KedroSession.run")
@@ -222,6 +241,7 @@ def test_mlflow_run_id_injection_in_execute(
     kedro_session_run,
     mlflow_search_runs,
     sagemaker_pipelines_runner,
+    get_project_metadata_mock,
     cli_context,
     patched_kedro_package,
 ):
@@ -240,7 +260,11 @@ def test_mlflow_run_id_injection_in_execute(
 
     assert kedro_session_run.called_with("__default__", node_names=["node"])
 
-
+@patch("kedro.framework.startup._get_project_metadata", return_value=MagicMock(
+    package_name="test_package",
+    name="test_project",
+    version="0.1"
+))
 @patch("kedro_sagemaker.cli.SageMakerPipelinesRunner")
 @patch("mlflow.search_runs")
 @patch("kedro_sagemaker.utils.KedroSession.run")
@@ -248,6 +272,7 @@ def test_warn_if_unable_to_lookup_mlflow_run_id_in_execute(
     kedro_session_run,
     mlflow_search_runs,
     sagemaker_pipelines_runner,
+    get_project_metadata_mock,
     cli_context,
     patched_kedro_package,
     caplog,

@@ -9,7 +9,8 @@ import backoff
 import cloudpickle
 import fsspec
 import zstandard as zstd
-from kedro.io import AbstractDataSet, DataSetError
+from kedro.io.core import AbstractDataset, DatasetError
+
 from tarsafe import TarSafe
 
 from kedro_sagemaker.constants import KEDRO_SAGEMAKER_S3_TEMP_DIR_NAME
@@ -18,7 +19,7 @@ from kedro_sagemaker.utils import is_distributed_master_node
 logger = logging.getLogger(__name__)
 
 
-class SageMakerModelDataset(AbstractDataSet):
+class SageMakerModelDataset(AbstractDataset):
     STORE_METHODS = ("pickle", "blob", "cloudpickle")
     SAGEMAKER_DEFAULT_PATH = "/opt/ml"
     MODEL_TAR_GZ = "model.tar.gz"
@@ -52,7 +53,7 @@ class SageMakerModelDataset(AbstractDataSet):
                     tf.extractall(self.sagemaker_path)
                     break
         else:
-            raise DataSetError(f"No model.tar.gz found in {search_path}")
+            raise DatasetError(f"No model.tar.gz found in {search_path}")
 
         to_load = {}
         for p in Path(self.sagemaker_path).iterdir():
@@ -123,7 +124,7 @@ class SageMakerModelDataset(AbstractDataSet):
         return {}
 
 
-class CloudpickleDataset(AbstractDataSet):
+class CloudpickleDataset(AbstractDataset):
     def __init__(
         self,
         bucket,
