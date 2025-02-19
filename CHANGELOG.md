@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Ensured compatibility of kedro-sagemaker with Kedro versions > 0.19 by updating dependencies, dataset naming, configuration loader, and documentation.
+
 ## [0.3.0] - 2023-02-20
 
 -   Add subnets and security groups configuration for nodes (<https://github.com/getindata/kedro-sagemaker/pull/11>) by [@wmikolajczyk-fandom](https://github.com/wmikolajczyk-fandom)
