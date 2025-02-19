@@ -2,7 +2,8 @@ import logging
 import os
 from typing import Any, Dict
 
-from kedro.io import AbstractDataSet, DataCatalog
+from kedro.io import DataCatalog
+from kedro.io.core import AbstractDataset
 from kedro.pipeline import Pipeline
 from kedro.runner import SequentialRunner
 from pluggy import PluginManager
@@ -45,14 +46,13 @@ class SageMakerPipelinesRunner(SequentialRunner):
         hook_manager: PluginManager = None,
         session_id: str = None,
     ) -> Dict[str, Any]:
-        unsatisfied = pipeline.inputs() - set(catalog.list())
+        unsatisfied = (pipeline.inputs() | pipeline.outputs()) - set(catalog.list())
         for ds_name in unsatisfied:
-            catalog = catalog.shallow_copy()
             catalog.add(ds_name, self.create_default_data_set(ds_name))
 
         return super().run(pipeline, catalog, hook_manager, session_id)
 
-    def create_default_data_set(self, ds_name: str) -> AbstractDataSet:
+    def create_default_data_set(self, ds_name: str) -> AbstractDataset:
         # TODO: handle credentials better (probably with built-in Kedro credentials
         #  via ConfigLoader (but it's not available here...)
         dataset_cls = CloudpickleDataset

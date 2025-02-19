@@ -14,15 +14,13 @@ classifiers = [
     "Development Status :: 4 - Beta", # license and python versions added automatically
 ]
 [tool.poetry.group.dev.dependencies]
-pytest = "<7"
-pytest-cov = ">=2.8.0,<4.0.0"
-tox = ">=3.25.1,<4.0.0"
-numpy = "^1.23.5"
-pandas = "^1.5.2"
-pre-commit = "^2.20.0"
-recommonmark = "^0.7.1"
-kedro-mlflow = "^0.11.6"
-
+pytest = ">=7.0.0"
+pytest-cov = ">=2.8.0"
+numpy = ">=1.23.5"
+pandas = ">=1.5.2"
+pre-commit = ">=2.20.0"
+recommonmark = ">=0.7.1"
+kedro-mlflow = ">=0.12.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -42,15 +40,15 @@ exclude_lines = [
 known_third_party = ["pydantic","semver","setuptools"]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.11"
-kedro = ">=0.18.3,<0.19"
-sagemaker = "^2.117.0"
-zstandard = ">=0.19.0,<0.20.0"
-s3fs = "^2022.11.0"
-backoff = "^2.2.1"
-pydantic = "^1.10.2"
-cloudpickle = "^2.2.0"
-tarsafe = "0.0.4"
+python = ">=3.9,<4.0"
+kedro = ">=0.19.0"
+sagemaker = ">=2.148.0"
+zstandard = ">=0.19.0"
+s3fs = ">=2022.11.0"
+backoff = ">=2.2.1"
+pydantic = ">=1.10.2"
+cloudpickle = ">=2.2.0"
+tarsafe = ">=0.0.4"
 
 [tool.poetry.plugins] # Optional super table
 

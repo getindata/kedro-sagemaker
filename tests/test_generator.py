@@ -118,15 +118,15 @@ def test_should_process_kedro_parameters(context_mock):
         for i in range(5)
     }
 
-    assert params_transformed["numeric.int_param"].parameter_type.python_type == int
+    assert params_transformed["numeric.int_param"].parameter_type.python_type is int
     assert params_transformed["numeric.int_param"].default_value == 42
-    assert params_transformed["numeric.float_param"].parameter_type.python_type == float
+    assert params_transformed["numeric.float_param"].parameter_type.python_type is float
     assert params_transformed["numeric.float_param"].default_value == 3.14
-    assert params_transformed["string"].parameter_type.python_type == str
+    assert params_transformed["string"].parameter_type.python_type is str
     assert params_transformed["string"].default_value == "alamakota"
-    assert params_transformed["is_great_plugin"].parameter_type.python_type == bool
+    assert params_transformed["is_great_plugin"].parameter_type.python_type is bool
     assert params_transformed["is_great_plugin"].default_value is True
-    assert params_transformed["features"].parameter_type.python_type == str
+    assert params_transformed["features"].parameter_type.python_type is str
     assert params_transformed["features"].default_value == '["age", "gender"]'
 
 
@@ -407,7 +407,7 @@ def test_should_create_estimator_based_on_the_config(
     config.aws.bucket = "__bucket_name__"
     config.docker.image = "__image_uri__"
     config.aws.resources["node1"] = ResourceConfig(
-        instance_type="__instance_type__", instance_count=42, timeout_seconds=4242
+        instance_type="ml.m5.large", instance_count=42, timeout_seconds=4242
     )
     context_mock.catalog = DataCatalog({"i2": SageMakerModelDataset()})
     context_mock.env = (env := uuid4().hex)
@@ -421,7 +421,7 @@ def test_should_create_estimator_based_on_the_config(
     assert estimator.image_uri == "__image_uri__"
     assert estimator.role == "__execution_role__"
     assert estimator.instance_count == 42
-    assert estimator.instance_type == "__instance_type__"
+    assert estimator.instance_type == "ml.m5.large"
     assert estimator.max_run == 4242
     assert estimator.enable_sagemaker_metrics is False
     assert len(estimator.metric_definitions) == 0

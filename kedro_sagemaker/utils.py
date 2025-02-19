@@ -9,6 +9,7 @@ from functools import cached_property
 from typing import Any, List, MutableMapping, Optional, Union
 
 from kedro.framework.session import KedroSession
+from omegaconf import OmegaConf
 
 from kedro_sagemaker.config import KedroSageMakerPluginConfig
 from kedro_sagemaker.constants import (
@@ -67,9 +68,21 @@ class KedroContextManager:
 
     @cached_property
     def plugin_config(self) -> KedroSageMakerPluginConfig:
-        return KedroSageMakerPluginConfig.parse_obj(
-            self.context.config_loader.get("sagemaker*")
-        )
+        env = self.env or "base"
+        config_path = os.path.join("conf", env, "sagemaker.yml")
+
+        if not os.path.exists(config_path):
+            raise FileNotFoundError(
+                f"Configuration file not found: {config_path}. "
+                f"Ensure the configuration file exists in the specified environment."
+            )
+
+        try:
+            config = OmegaConf.load(config_path)
+            parsed = KedroSageMakerPluginConfig.parse_obj(config)
+            return parsed
+        except Exception as e:
+            raise ValueError(f"Failed to load or parse the configuration: {e}")
 
     @cached_property
     def context(self):
@@ -78,7 +91,7 @@ class KedroContextManager:
 
     def __enter__(self):
         self.session = KedroSession.create(
-            self.package_name, env=self.env, extra_params=self.extra_params
+            env=self.env, extra_params=self.extra_params
         )
         return self
 
